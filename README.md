@@ -8,7 +8,7 @@ We developped a method, based on the study of the productivity (proportion of ju
 - the breeding success (asymptote parameter, final proportion of juvenile in the sampled population)
 - the variance in breeding phenology (scale parameter
 
-The aim of this project is to investigate how well estimated is the phenology (using sigmoid bayesian approach) when parameters associated with the phenology (mean and variance of laying dates, survival, breeding success...) vary. For this, we want to simulate breeding phenology of a (bird) population, sample it, according to a specified sampling design, and then compare the estimated values with the simulated ones. 
+The aim of this project is to investigate how well estimated is the phenology (using sigmoid bayesian approach) when parameters associated with the phenology (mean and variance of laying dates, survival, breeding success, number of breeding attempts ...) vary. For this, we want to simulate breeding phenology of a (bird) population, sample it, according to a specified sampling design, and then compare the estimated values with the simulated ones. 
 
 (Define space, time)
 
@@ -21,6 +21,9 @@ In a study area, corresponding to the "sample area" of a capture site :
 - Once fledge, survival of juveniles may evolve according to time (Naef‐Daenzeret al., 2001. Journal of Animal ecology, 70(5), 730-738.)
 
 Simulating CES capture protocol would just correspond in sampling $N_{sessions}$ times (every 2 weeks for instance) all the available individuals (juveniles + adults).
+
+Save data and apply model. (different version of the model)
+
 
 
 ## 2 - Including young dispersal
