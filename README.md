@@ -10,11 +10,18 @@ We developped a method, based on the study of the productivity (proportion of ju
 
 The aim of this project is to investigate how well estimated is the phenology (using sigmoid bayesian approach) when parameters associated with the phenology (mean and variance of laying dates, survival, breeding success...) vary. For this, we want to simulate breeding phenology of a (bird) population, sample it, according to a specified sampling design, and then compare the estimated values with the simulated ones. 
 
-Define space, time
+(Define space, time)
 
 ## 1 - Estimate phenology without taking into account young dispersal 
 
 In a study area, corresponding to the "sample area" of a capture site : 
 - 3-5 breeding pairs (capturable during all the study period)
+- Each couple lays at a time t (sample from a normal distribution N($\mu_{site}$, $\sigma_{site}$), $N_{eggs}$ sample from a Poisson distribution Pois($\lambda_{eggs}$).
+- Each egg has a probability $P_{fledge}$ to fledge. 
+- Once fledge, survival of juveniles may evolve according to time (Naef‐Daenzeret al., 2001. Journal of Animal ecology, 70(5), 730-738.)
+
+Simulating CES capture protocol would just correspond in sampling $N_{sessions}$ times (every 2 weeks for instance) all the available individuals (juveniles + adults).
+
 
 ## 2 - Including young dispersal
+
