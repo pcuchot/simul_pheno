@@ -15,26 +15,38 @@ require(mcmcplots)
 
 # general
 require(tidyverse)
+require(bayesplot)
 
 # simulate data
 source("2_function_sim_data.R")
+
+years = 15
 
 prod <- simul_data(
   # 5 pairs of breeders per year
   n_breeders = 5,
   # 10 years
-  n_years = 10,
+  n_years = years,
   # CES start (julian days)
   start_ces = 80,
   # CES end (julian days)
-  end_ces = 200,
+  end_ces = 220,
   # sessions per year 
-  n_session = 9,
+  n_session = 12,
   # mean laying date for this site 
   mean_ld_site = 120)
 
-prod_f <- 
-  mutate()
+# plot simulated
+prod$capt_sess%>%
+  ggplot(aes(x = t, y = prod, color = as.character(year)))+
+  geom_point()+
+  # add leaying dates
+  geom_vline(data = data1$mean_ld_year,
+             aes(xintercept = mean_ld, 
+                 color = as.character(year)), alpha = 0.8)+
+  geom_line(alpha = 0.3)+
+  theme_light()
+
 
 # Structure data ----------------------------------------------------------
 
@@ -214,118 +226,19 @@ md_1 <- jags(data = data,
              n.iter = 10000,
              n.burnin = 3000)
 
-#saveRDS(md_1,"md_1_pheno.rds)
+mcmcplot(md_1)
 
 
-# library plot ------------------------------------------------------------
+# quickly compare mean xmid with 'real pheno'
+df_compare <- data.frame(estim = md_1$BUGSoutput$mean$c, 
+           real = prod$mean_ld_year$mean_ld, 
+           year = 1:years)
 
-library(tidyverse)
-library(bayesplot)
-
-mat_md <- as.matrix(as.mcmc(md_1))
-
-
-# csig --------------------------------------------------------------------
-
-
-# jointure tableau pour identification espèce année
-df_density <- mat_md%>%
-  as.data.frame()%>%
-  # select(starts_with("csig"))%>%
-  select(starts_with("c["))%>%
-  pivot_longer(everything(),
-               names_to = "parameter", values_to = "est")%>%
-  mutate(an_sp_n = as.numeric(gsub(".*?([0-9]+).*", "\\1", parameter)))%>%
-  left_join(prod_f[,c("sitename", "year","species", "an_sp_n")])%>%
-  distinct(est,an_sp_n,sitename,year,species, .keep_all = TRUE)
-
-# plot des densités, un peu illisible
-df_density%>%
-  ggplot(aes(x = est,fill = parameter, group = parameter))+
-  geom_density(alpha = 0.5)+
-  facet_grid(species~year, 
-             switch = "y")+
-  theme_minimal() +
-  theme(
-    strip.text.y.left = element_text(angle = 0),
-    axis.text.y = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "none"
-  )
-
-
-# get mean value for csig (per species and per year)
-df_density%>%
-  group_by(year, species)%>%
-  filter(year < 2020)%>%
-  summarize(mean_csig = mean(est),
-            sd__csig = sd(est))
-
-# evolutin csig par année (plot)
-df_density%>%
-  group_by(year, species)%>%
-  filter(year < 2020)%>%
-  summarize(mean_csig = mean(est),
-            sd__csig = sd(est))%>%
-  ggplot(aes(x = year, y = mean_csig, color = species))+
-  geom_point()+
-  theme_bw()
-
-# boxplot estimates per year and per species
-df_density%>%
-  ggplot(aes(x = year, y = est, fill = species, color = year))+
-  geom_boxplot()+
-  theme_bw()
-
-
-
-# asig --------------------------------------------------------------------
-
-
-# jointure tableau pour identification espèce année
-df_density <- mat_md%>%
-  as.data.frame()%>%
-  # select(starts_with("csig"))%>%
-  select(starts_with("asig["))%>%
-  pivot_longer(everything(),
-               names_to = "parameter", values_to = "est")%>%
-  mutate(an_sp_n = as.numeric(gsub(".*?([0-9]+).*", "\\1", parameter)))%>%
-  left_join(prod_f[,c("sitename", "year","species", "an_sp_n")])%>%
-  distinct(est,an_sp_n,sitename,year,species, .keep_all = TRUE)
-
-# plot des densités, un peu illisible
-df_density%>%
-  ggplot(aes(x = est,fill = parameter, group = parameter))+
-  geom_density(alpha = 0.5)+
-  facet_grid(species~year, 
-             switch = "y")+
-  theme_minimal() +
-  theme(
-    strip.text.y.left = element_text(angle = 0),
-    axis.text.y = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "none"
-  )
-
-
-# get mean value for csig (per species and per year)
-df_density%>%
-  group_by(year, species)%>%
-  filter(year < 2020)%>%
-  summarize(mean_asig = mean(est),
-            sd__asig = sd(est))
-
-# evolutin csig par année (plot)
-df_density%>%
-  group_by(year, species)%>%
-  filter(year < 2020)%>%
-  summarize(mean_asig = mean(est),
-            sd__asig = sd(est))%>%
-  ggplot(aes(x = year, y = mean_asig,fill = species, color = species))+
-  geom_point()+
-  theme_bw()+
-  stat_smooth(method = 'lm')
-
+# plot correlation between real and estimated phenology
+df_compare%>%
+  ggplot(aes(x = estim, y = real, label = year))+
+  geom_text(vjust = 1.5)+
+  geom_point()
 
 
 

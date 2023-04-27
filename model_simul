@@ -1,0 +1,89 @@
+
+    model{
+
+  # loop on capture session
+
+  for(i in 1:N){ # session data
+
+    ## likelihood
+    n0[i] ~ dbin(p[i], nt[i])
+    
+    p[i] <- asig[an_sp_n[i]]/(1+exp((csig[an_sp_n[i]]-date[i])/dsig[an_sp_n[i]]))
+  
+  }
+
+
+  # loop on year and species
+
+  for (ii in 1:N_an_sp_n){
+    
+
+  # csig parameter
+  
+    csig[ii] ~ dnorm(mu[ii], tau_res_csig[sp2[ii]]) 
+
+    mu[ii] <- c[ii] + random_csig_site[site[ii]]  
+
+    
+  # scale parameter
+  
+    dsig[ii] ~ dnorm(mu_dsig[ii], tau_res_dsig[sp2[ii]])
+    
+    mu_dsig[ii] <- d[ii] + random_dsig_site[site[ii]]
+
+
+  # asymptote parameter  
+  
+    asig[ii] ~ dnorm(mu_asig[ii], tau_res_asig[sp2[ii]])T(0.3,1)
+    
+    mu_asig[ii] <- a[ii] + random_asig_site[site[ii]]
+    
+     
+  c[ii] ~ dnorm(150,0.01)
+
+  a[ii] ~ dnorm(0,0.01)T(0,1)
+
+  d[ii] ~ dnorm(0,0.01)T(0,10)
+    
+    
+  }
+  
+
+  # random effect site
+  
+  for(z in 1:N_site){ #number of sites
+ 
+  # random site 
+    random_csig_site[z] ~ dnorm(0, tau_csig_site)
+    random_asig_site[z] ~ dnorm(0, tau_asig_site)
+    random_dsig_site[z] ~ dnorm(0, tau_dsig_site)
+    
+  }
+  
+  for(s in 1:N_sp){ # for  variance estimation (per species)
+  
+    sigma_res_csig[s] ~ dt(0, 0.01, 1)T(0,200) # Residual standard deviation
+    sigma_res_dsig[s] ~ dt(0, 0.01, 1)T(0,10) # Residual standard deviation
+    sigma_res_asig[s] ~ dt(0, 0.01, 1)T(0,1) # Residual standard deviation
+  
+    tau_res_csig[s] <- 1/(sigma_res_csig[s]*sigma_res_csig[s])
+    tau_res_dsig[s] <- 1/(sigma_res_dsig[s]*sigma_res_dsig[s])
+    tau_res_asig[s] <- 1/(sigma_res_asig[s]*sigma_res_asig[s])
+  
+  }
+  
+  # csig site
+    sigma_csig_site ~ dt(0, 0.01, 1)T(0,1)
+    tau_csig_site <- pow(sigma_csig_site, -2)
+
+  # dsig site
+    sigma_dsig_site ~ dt(0, 0.01, 1)T(0,20)
+    tau_dsig_site <- pow(sigma_dsig_site, -2)
+
+  # asig site
+    sigma_asig_site ~ dt(0, 0.01, 1)T(0,1)
+    tau_asig_site <- pow(sigma_asig_site, -2)
+  
+  
+
+}
