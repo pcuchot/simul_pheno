@@ -1,0 +1,48 @@
+
+    model{
+ 
+  # loop on capture session
+ 
+  for(i in 1:N){
+    
+    ## likelihood
+    n0[i] ~ dbin(p[i], nt[i])
+    
+    p[i] <- asig[an[i]]/(1+exp((csig[an[i]]-date[i])/dsig[an[i]]))
+  }
+ 
+  # loop on an
+
+  for (ii in 1:N_an){
+    
+    # asig[ii] <- alpha_asig + random_asig_an[an_n[ii]]
+    # csig[ii] <- alpha_csig + random_csig_an[an_n[ii]]
+    # dsig[ii] <- alpha_dsig + random_dsig_an[an_n[ii]]
+    
+    asig[ii] <- alpha_asig + random_asig_an[ii]
+    csig[ii] <- alpha_csig + random_csig_an[ii]
+    dsig[ii] <- alpha_dsig + random_dsig_an[ii]
+    
+    random_asig_an[ii] ~ dnorm(0, tau_asig_an)
+    random_csig_an[ii] ~ dnorm(0, tau_csig_an)
+    random_dsig_an[ii] ~ dnorm(0, tau_dsig_an)
+ 
+  }
+
+  alpha_asig ~ dnorm(0.7,0.1)T(0,1)
+  alpha_csig ~ dnorm(150,0.1)T(100,200)
+  alpha_dsig ~ dnorm(7,0.1)T(0,15)
+ 
+#folded Cauchy version
+  sigma_asig_an ~ dt(0, 0.01, 1)
+  tau_asig_an <- pow(sigma_asig_an, -2)
+ 
+#folded Cauchy version
+  sigma_csig_an ~ dt(0, 0.01, 1)
+  tau_csig_an <- pow(sigma_csig_an, -2)
+  
+  sigma_dsig_an ~ dt(0, 0.01, 1)
+  tau_dsig_an <- pow(sigma_dsig_an, -2)
+
+}
+

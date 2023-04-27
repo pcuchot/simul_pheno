@@ -20,19 +20,19 @@ require(bayesplot)
 # simulate data
 source("2_function_sim_data.R")
 
-years = 15
+Nyears = 15
 
 prod <- simul_data(
   # 5 pairs of breeders per year
   n_breeders = 5,
-  # 10 years
-  n_years = years,
+  # Nyears
+  n_years = Nyears,
   # CES start (julian days)
   start_ces = 80,
   # CES end (julian days)
   end_ces = 220,
   # sessions per year 
-  n_session = 12,
+  n_session = 8,
   # mean laying date for this site 
   mean_ld_site = 120)
 
@@ -40,205 +40,156 @@ prod <- simul_data(
 prod$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
-  # add leaying dates
+  # add laying dates
   geom_vline(data = data1$mean_ld_year,
              aes(xintercept = mean_ld, 
                  color = as.character(year)), alpha = 0.8)+
   geom_line(alpha = 0.3)+
   theme_light()
 
-
 # Structure data ----------------------------------------------------------
 
 prod_f <- prod$capt_sess %>%
-  mutate(sitename = "1",
-         species = "sp1",
-         an_f = as.factor(year),
-         an_n = as.numeric(an_f),
-         site_f = as.character(sitename),
-         site_n = as.numeric(site_f),
-         sp_f = as.factor(species),
-         sp_n = as.numeric(sp_f),
-         an_sp = as.factor(paste(an_f,sp_f)),
-         an_sp_n = as.numeric(an_sp)
-         )
-
-df_rd <- prod_f%>%
-  distinct(an_sp_n, .keep_all = TRUE)
+  mutate(an = as.numeric(year))
 
 # data for the model
 data <- list(nt = prod_f$n_capt_juveniles+prod_f$n_capt_adults,
              n0 = prod_f$n_capt_juveniles,
              date = as.numeric(prod_f$t),
              N = nrow(prod_f),
-             N_an = length(unique(prod_f$an_n)),
-             N_site = length(unique(prod_f$site_n)),
-             an = prod_f$an_n,
-             sp = as.numeric(as.factor(as.character(prod_f$sp_n))),
-             an2 = df_rd$an_n,
-             sp2 = as.numeric(as.factor(as.character(df_rd$sp_n))),
-             site = df_rd$site_n,
-             N_sp = n_distinct(df_rd$species),
-             N_an_sp_n = n_distinct(prod_f$an_sp_n),
-             an_sp_n = prod_f$an_sp_n,
-             rd_an_sp_n = df_rd$an_sp_n
+             N_an = length(unique(prod_f$an)),
+             an = prod_f$an
 )
 
-# Model 1 -----------------------------------------------------------------
+# model3 ------------------------------------------------------------------
 
-sink("model_simul")
+sink("model_simul3")
 cat("
     model{
-
+ 
   # loop on capture session
-
-  for(i in 1:N){ # session data
-
+ 
+  for(i in 1:N){
+    
     ## likelihood
     n0[i] ~ dbin(p[i], nt[i])
     
-    p[i] <- asig[an_sp_n[i]]/(1+exp((csig[an_sp_n[i]]-date[i])/dsig[an_sp_n[i]]))
-  
+    p[i] <- asig[an[i]]/(1+exp((csig[an[i]]-date[i])/dsig[an[i]]))
   }
-
-
-  # loop on year and species
-
-  for (ii in 1:N_an_sp_n){
-    
-
-  # csig parameter
-  
-    csig[ii] ~ dnorm(mu[ii], tau_res_csig[sp2[ii]]) 
-
-    mu[ii] <- c[ii] + random_csig_site[site[ii]]  
-
-    
-  # scale parameter
-  
-    dsig[ii] ~ dnorm(mu_dsig[ii], tau_res_dsig[sp2[ii]])
-    
-    mu_dsig[ii] <- d[ii] + random_dsig_site[site[ii]]
-
-
-  # asymptote parameter  
-  
-    asig[ii] ~ dnorm(mu_asig[ii], tau_res_asig[sp2[ii]])T(0.3,1)
-    
-    mu_asig[ii] <- a[ii] + random_asig_site[site[ii]]
-    
-     
-  c[ii] ~ dnorm(150,0.01)
-
-  a[ii] ~ dnorm(0,0.01)T(0,1)
-
-  d[ii] ~ dnorm(0,0.01)T(0,10)
-    
-    
-  }
-  
-
-  # random effect site
-  
-  for(z in 1:N_site){ #number of sites
  
-  # random site 
-    random_csig_site[z] ~ dnorm(0, tau_csig_site)
-    random_asig_site[z] ~ dnorm(0, tau_asig_site)
-    random_dsig_site[z] ~ dnorm(0, tau_dsig_site)
+  # loop on an
+
+  for (ii in 1:N_an){
     
+    # asig[ii] <- alpha_asig + random_asig_an[an_n[ii]]
+    # csig[ii] <- alpha_csig + random_csig_an[an_n[ii]]
+    # dsig[ii] <- alpha_dsig + random_dsig_an[an_n[ii]]
+    
+    asig[ii] <- alpha_asig + random_asig_an[ii]
+    csig[ii] <- alpha_csig + random_csig_an[ii]
+    dsig[ii] <- alpha_dsig + random_dsig_an[ii]
+    
+    random_asig_an[ii] ~ dnorm(0, tau_asig_an)
+    random_csig_an[ii] ~ dnorm(0, tau_csig_an)
+    random_dsig_an[ii] ~ dnorm(0, tau_dsig_an)
+ 
   }
-  
-  for(s in 1:N_sp){ # for  variance estimation (per species)
-  
-    sigma_res_csig[s] ~ dt(0, 0.01, 1)T(0,200) # Residual standard deviation
-    sigma_res_dsig[s] ~ dt(0, 0.01, 1)T(0,10) # Residual standard deviation
-    sigma_res_asig[s] ~ dt(0, 0.01, 1)T(0,1) # Residual standard deviation
-  
-    tau_res_csig[s] <- 1/(sigma_res_csig[s]*sigma_res_csig[s])
-    tau_res_dsig[s] <- 1/(sigma_res_dsig[s]*sigma_res_dsig[s])
-    tau_res_asig[s] <- 1/(sigma_res_asig[s]*sigma_res_asig[s])
-  
-  }
-  
-  # csig site
-    sigma_csig_site ~ dt(0, 0.01, 1)T(0,1)
-    tau_csig_site <- pow(sigma_csig_site, -2)
 
-  # dsig site
-    sigma_dsig_site ~ dt(0, 0.01, 1)T(0,20)
-    tau_dsig_site <- pow(sigma_dsig_site, -2)
-
-  # asig site
-    sigma_asig_site ~ dt(0, 0.01, 1)T(0,1)
-    tau_asig_site <- pow(sigma_asig_site, -2)
+  alpha_asig ~ dnorm(0.7,0.1)T(0,1)
+  alpha_csig ~ dnorm(150,0.1)T(100,200)
+  alpha_dsig ~ dnorm(7,0.1)T(0,15)
+ 
+#folded Cauchy version
+  sigma_asig_an ~ dt(0, 0.01, 1)
+  tau_asig_an <- pow(sigma_asig_an, -2)
+ 
+#folded Cauchy version
+  sigma_csig_an ~ dt(0, 0.01, 1)
+  tau_csig_an <- pow(sigma_csig_an, -2)
   
-  
+  sigma_dsig_an ~ dt(0, 0.01, 1)
+  tau_dsig_an <- pow(sigma_dsig_an, -2)
 
-}", fill=TRUE)
+}
+", fill=TRUE)
 sink()
+
+# print()
 
 
 # Initial values ----------------------------------------------------------
 
 
-# init_f <-  function(){
-#   list(a = rnorm(data$N_an_sp_n,150,15),
-#        d = rnorm(data$N_an_sp_n,0,1),
-#        c = rnorm(data$N_an_sp_n,0,1),
-#        
-#        random_csig_site = rep(0,data$N_site),
-#        sigma_csig_site = runif(1,0,100),
-#        
-#        random_asig_site = rep(0,data$N_site),
-#        sigma_asig_site = runif(1,0,1),
-#        
-#        random_dsig_site = rep(0,data$N_site),
-#        sigma_dsig_site = runif(1,0,15)
-#        
-#   )
-# }
+init_f <-  function(){
+  
+  list(
+    
+    # asig = runif(Nyears, 0.5, 1),
+    # dsig = runif(Nyears, 3,10),
+    # csig = dnorm(Nyears, 150, 20),
+    
+    alpha_asig = runif(1, 0, 1),
+    alpha_dsig = runif(1, 3, 10),
+    alpha_csig = rnorm(1, 150, 20),
+    
+    sigma_asig_an = rnorm(1, 3, 20),
+    sigma_csig_an = rnorm(1, 3, 20),
+    sigma_dsig_an = rnorm(1, 3, 20),
+    
+    random_asig_an = rnorm(Nyears, 0, 0.001),
+    random_csig_an = rnorm(Nyears, 0, 0.001),
+    random_dsig_an = rnorm(Nyears, 0, 0.001)
+    
+  )
+}
 
-# inits <- list(init1 = init_f(),init2=init_f(), init3=init_f())
+inits <- list(init1 = init_f(), init2=init_f(), init3=init_f())
 
 
 
 # Run models --------------------------------------------------------------
 
-# 1
-parameters <- c("asig","csig","dsig",
-                
-                "d","a","c",
-                
-                "sigma_csig_site",
-                "sigma_dsig_site",
-                "sigma_asig_site",
-                "random_csig_site",
-                "random_dsig_site",
-                "random_asig_site", "deviance"
-)
+# parameter to save md1
+# parameters <- c("asig","csig","dsig",
+#                 "sigma_csig","sigma_dsig","sigma_asig",
+#                 "mu_csig","mu_dsig","mu_asig",
+#                 "deviance"
+# )
 
+# parameter to save md2
+# parameters2 <- c("asig","csig","dsig",
+#                 "mu_csig","mu_dsig","mu_asig", 
+#                 "deviance")
+
+# parameter to save md3
+parameters3 <- c("asig","csig","dsig",
+                 "random_asig_an","random_csig_an","random_dsig_an",
+                 "sigma_csig_an","sigma_dsig_an","sigma_asig_an")
+
+# run model 
 md_1 <- jags(data = data,
-             parameters.to.save = parameters,
-             model.file = "model_simul",
-             # inits = inits,
+             parameters.to.save = parameters3,
+             model.file = "model_simul3",
+             inits = inits,
              n.chains = 3,
              n.iter = 10000,
              n.burnin = 3000)
 
-mcmcplot(md_1)
+# mcmcplot(md_1)
 
 
 # quickly compare mean xmid with 'real pheno'
 df_compare <- data.frame(estim = md_1$BUGSoutput$mean$c, 
            real = prod$mean_ld_year$mean_ld, 
-           year = 1:years)
+           year = 1:Nyears)
 
 # plot correlation between real and estimated phenology
 df_compare%>%
   ggplot(aes(x = estim, y = real, label = year))+
   geom_text(vjust = 1.5)+
-  geom_point()
+  geom_point()+
+  theme_bw()
+
 
 
 
