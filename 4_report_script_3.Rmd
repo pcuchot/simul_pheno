@@ -1,14 +1,19 @@
+---
+title: "4_report_script_3"
+author: "Paul Cuchot"
+date: "02/05/2023"
+output: html_document
+---
 
-# -------------------------------------------------------------------------
-# Title : 3_model_pheno
-# Author : Paul Cuchot
-# Date : 27/04/23
-# note : Simulate data for X years, and compare the estimated phenology 
-# with the simulated ones
-# -------------------------------------------------------------------------
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-# Library -----------------------------------------------------------------
+## Test model with simulated data
 
+### Library
+
+```{r}
 # bayesian modeling + plot
 require(R2jags)
 require(MASS)
@@ -18,13 +23,15 @@ require(mcmcplots)
 require(tidyverse)
 require(bayesplot)
 
+```
 
-# Simulate data -----------------------------------------------------------
+### Simulate data
 
+```{r}
 # load function 
 source("2_function_sim_data.R")
 # number of year to simlate
-Nyears = 4
+Nyears = 10
 
 prod <- simul_data(
   # 5 pairs of breeders per year
@@ -39,21 +46,30 @@ prod <- simul_data(
   n_session = 5,
   # mean laying date for this site 
   mean_ld_site = 120)
+```
 
 
-# plot productivity through time
+### plot productivity through time (sim data)
+
+
+```{r pressure, echo=FALSE}
+
 # vertical lines = mean laying date per year 
 prod$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
   # add laying dates
-  geom_vline(data = data1$mean_ld_year,
+  geom_vline(data = prod$mean_ld_year,
              aes(xintercept = mean_ld, 
                  color = as.character(year)), alpha = 0.8)+
   geom_line(alpha = 0.3)+
   theme_light()
 
-# Structure data ----------------------------------------------------------
+```
+
+### Structure data for JAGS
+
+```{r}
 
 prod_f <- prod$capt_sess %>%
   mutate(an = as.numeric(year))
@@ -66,11 +82,11 @@ data <- list(nt = prod_f$n_capt_juveniles+prod_f$n_capt_adults,
              N_an = length(unique(prod_f$an)),
              an = prod_f$an
 )
+```
 
-# model3 ------------------------------------------------------------------
 
-# sink("model_simul3")
-# cat("
+### Define model 
+```{r}
 model <- "model{
  
   # loop on capture session
@@ -117,15 +133,12 @@ model <- "model{
   tau_dsig_an <- pow(sigma_dsig_an, -2)
 
 }
-"#, fill=TRUE)
-# sink()
+"
+```
 
-# print()
+### Create initial values and parameters to save
 
-
-# Initial values ----------------------------------------------------------
-
-
+```{r}
 init_f <-  function(){
   
   list(
@@ -147,30 +160,37 @@ init_f <-  function(){
 
 inits <- list(init1 = init_f(), init2=init_f(), init3=init_f())
 
-
-
-# Run models --------------------------------------------------------------
-
-
-# parameter to save md3
+# parameter to save 
 parameters3 <- c("asig","csig","dsig",
                  "random_asig_an","random_csig_an","random_dsig_an",
                  "sigma_csig_an","sigma_dsig_an","sigma_asig_an")
 
+```
+
+### Run model
+
+```{r}
 # run model 
 md_1 <- jags(data = data,
              parameters.to.save = parameters3,
-             # model.file = "model_simul3",
              model.file = textConnection(model),
              inits = inits,
              n.chains = 3,
              n.iter = 10000,
              n.burnin = 3000)
+```
 
-# mcmcplot(md_1)
+### Look at convergence 
+
+```{r}
+md_1
+```
 
 
-# quickly compare mean xmid with 'real pheno'
+
+### quickly compare mean xmid with 'real pheno'
+
+```{r}
 data.frame(estim = md_1$BUGSoutput$mean$c, 
            real = prod$mean_ld_year$mean_ld, 
            year = 1:Nyears)%>%
@@ -178,9 +198,6 @@ data.frame(estim = md_1$BUGSoutput$mean$c,
   geom_text(vjust = 1.5)+
   geom_point()+
   theme_bw()
-
-
-
-
+```
 
 
