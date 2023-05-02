@@ -2,7 +2,8 @@
 title: "4_report_script_3"
 author: "Paul Cuchot"
 date: "02/05/2023"
-output: github_document 
+output: github_document
+# output: pdf_document 
 ---
 
 ```{r setup, include=FALSE}
@@ -38,6 +39,7 @@ require(bayesplot)
 - Birds do not migrate or immigrate during the breeding season
 - Same capture probability between juveniles and adults 
 
+The function used to simulate data is described at the end of this document. 
 
 ```{r}
 # load function 
@@ -204,7 +206,7 @@ md_1
 
 
 
-### quickly compare mean xmid with 'real pheno'
+### Quickly compare mean xmid with 'real pheno'
 
 ```{r}
 data.frame(estim = md_1$BUGSoutput$mean$c, 
@@ -215,6 +217,110 @@ data.frame(estim = md_1$BUGSoutput$mean$c,
   geom_point()+
   theme_bw()+
   stat_smooth(method = lm)
+```
+
+
+## Annexe
+
+### Function to simulate data
+
+```{r eval=F, echo=T}
+simul_data <- function(n_breeders,
+                       n_years, 
+                       n_session, 
+                       start_ces = 80,
+                       end_ces = 120,
+                       mean_ld_site = 120){
+  
+  # mean laying date (among breeding individuals - change between years)
+  mean_ld <- round(rnorm(n_years, mean_ld_site, 15)) # (real pheno)
+  
+  sd_ld <- 7
+  
+  # number of eggs per pair
+  mean_eggs <- 8
+  sd_eggs <- 5
+  
+  # final data_set
+  df_site <- data.frame(t = NA,
+                        n_capt_adults = NA,
+                        n_capt_juveniles = NA, 
+                        prod = NA,
+                        year = NA)[0,] 
+  
+  for(k in 1:n_years){
+    
+    # sample n_breeders laying events
+    ld_dates <- round(rnorm(n_breeders, 
+                            mean = mean_ld[k], 
+                            sd = sd_ld))
+    
+    # fledglings dates 
+    fledgl_dates <- round(ld_dates)+35
+    
+    # number of eggs per pair
+    n_eggs <- abs(round(rnorm(n_breeders, mean_eggs, sd_eggs)))
+    
+    # create a dataframe (one row per breeding pair)
+    df_breed <- data.frame(
+      ld_dates = ld_dates,
+      n_eggs = n_eggs,
+      fledgl_dates = fledgl_dates
+    )
+    
+    # sample (as CES design) 
+    
+    # choose days for capture session
+    t_capt <- round(seq(start_ces, end_ces, 
+                        length.out = n_session))
+    
+    # Number of sample individual per session (~capture effort)
+    mean_n_capt <- 9
+    
+    # Dataframe with n_adults and n_juveniles captured per session
+    df_session <- data.frame(t = t_capt,
+                             n_capt_adults = NA,
+                             n_capt_juveniles = NA,
+                             prod = NA,
+                             year = as.character(k)) 
+    
+    
+    for(i in t_capt){
+      
+      # catchable adults
+      n_adults <- n_breeders * 2
+      
+      # catchable juveniles
+      n_juveniles <- sum(df_breed[df_breed$fledgl_dates < i ,]$n_eggs)
+      
+      # sample birds among available individuals
+      capt_indiv <- sample( # how many individuals captured
+        c(rep(0,n_adults), 
+          rep(1,n_juveniles)),
+        round(rnorm(1,mean_n_capt)), replace = TRUE)
+      
+      # how many adults
+      df_session[df_session$t ==i,"n_capt_adults"] <- sum(capt_indiv == 0)
+      # how many juveniles
+      df_session[df_session$t ==i,"n_capt_juveniles"] <- sum(capt_indiv == 1) 
+      
+    }
+    
+    # calculate productivity
+    df_session <- df_session%>%
+      mutate(prod = n_capt_juveniles/(n_capt_adults+n_capt_juveniles))
+    
+    df_site <- rbind(df_site, df_session)
+  }
+  
+  # df with mean ld per year ("real breeding date")
+  df_mean_ld <- data.frame(year = 1:n_years,
+                           mean_ld = mean_ld)
+  
+  return(list(capt_sess = df_site, 
+              mean_ld_year = df_mean_ld))
+  
+}
 ```
 
 
