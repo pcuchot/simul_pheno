@@ -10,85 +10,25 @@ Paul Cuchot
 ``` r
 # bayesian modeling + plot
 require(R2jags)
-```
-
-    ## Le chargement a nécessité le package : R2jags
-
-    ## Warning: le package 'R2jags' a été compilé avec la version R 4.1.3
-
-    ## Le chargement a nécessité le package : rjags
-
-    ## Le chargement a nécessité le package : coda
-
-    ## Linked to JAGS 4.3.0
-
-    ## Loaded modules: basemod,bugs
-
-    ## 
-    ## Attachement du package : 'R2jags'
-
-    ## L'objet suivant est masqué depuis 'package:coda':
-    ## 
-    ##     traceplot
-
-``` r
 require(MASS)
-```
-
-    ## Le chargement a nécessité le package : MASS
-
-``` r
 require(mcmcplots)
-```
 
-    ## Le chargement a nécessité le package : mcmcplots
-
-    ## Warning: le package 'mcmcplots' a été compilé avec la version R 4.1.3
-
-    ## Registered S3 method overwritten by 'mcmcplots':
-    ##   method        from  
-    ##   as.mcmc.rjags R2jags
-
-``` r
 # general
 require(tidyverse)
-```
-
-    ## Le chargement a nécessité le package : tidyverse
-
-    ## Warning: le package 'tidyverse' a été compilé avec la version R 4.1.3
-
-    ## -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
-
-    ## v ggplot2 3.4.0     v purrr   0.3.4
-    ## v tibble  3.1.6     v dplyr   1.0.8
-    ## v tidyr   1.2.0     v stringr 1.4.0
-    ## v readr   2.1.2     v forcats 0.5.1
-
-    ## Warning: le package 'ggplot2' a été compilé avec la version R 4.1.3
-
-    ## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
-    ## x dplyr::filter() masks stats::filter()
-    ## x dplyr::lag()    masks stats::lag()
-    ## x dplyr::select() masks MASS::select()
-
-``` r
 require(bayesplot)
 ```
 
-    ## Le chargement a nécessité le package : bayesplot
-
-    ## This is bayesplot version 1.8.1
-
-    ## - Online documentation and vignettes at mc-stan.org/bayesplot
-
-    ## - bayesplot theme set to bayesplot::theme_default()
-
-    ##    * Does _not_ affect other ggplot2 plots
-
-    ##    * See ?bayesplot_theme_set for details on theme setting
-
 ### Simulate data
+
+#### Assumption for simulated data
+
+-   Same number of breeders between years (5 pairs)
+-   Mean number of eggs = 8 (sd = 5)
+-   All chicks fledge and survive
+-   Adults survive during the breeding season
+-   Between years, sessions are on the same days
+-   Birds do not migrate or immigrate during the breeding season
+-   Same capture probability between juveniles and adults
 
 ``` r
 # load function 
@@ -97,21 +37,26 @@ source("2_function_sim_data.R")
 Nyears = 10
 
 prod <- simul_data(
+  
   # 5 pairs of breeders per year
   n_breeders = 5,
   # Nyears
   n_years = Nyears,
+  # mean laying date for this site 
+  mean_ld_site = 120,
+  
   # CES start (julian days)
   start_ces = 100,
   # CES end (julian days)
   end_ces = 220,
   # sessions per year 
-  n_session = 5,
-  # mean laying date for this site 
-  mean_ld_site = 120)
+  n_session = 5)
 ```
 
 ### plot productivity through time (sim data)
+
+Productivity throught breeding period for a single site. The vertical
+lines represent the simulated mean laying for each year.
 
 ![](4_report_script_3_files/figure-gfm/pressure-1.png)<!-- -->
 
@@ -248,141 +193,141 @@ md_1
     ##  3 chains, each with 10000 iterations (first 3000 discarded), n.thin = 7
     ##  n.sims = 3000 iterations saved
     ##                    mu.vect sd.vect    2.5%     25%     50%     75%   97.5%
-    ## asig[1]              0.797   0.042   0.705   0.773   0.799   0.824   0.874
-    ## asig[2]              0.796   0.040   0.709   0.772   0.798   0.823   0.867
-    ## asig[3]              0.807   0.038   0.730   0.783   0.808   0.830   0.880
-    ## asig[4]              0.808   0.043   0.723   0.781   0.807   0.833   0.898
-    ## asig[5]              0.783   0.045   0.679   0.759   0.789   0.813   0.852
-    ## asig[6]              0.800   0.041   0.715   0.776   0.802   0.827   0.879
-    ## asig[7]              0.804   0.043   0.721   0.778   0.804   0.829   0.890
-    ## asig[8]              0.804   0.042   0.717   0.778   0.804   0.829   0.888
-    ## asig[9]              0.806   0.039   0.724   0.782   0.806   0.830   0.885
-    ## asig[10]             0.798   0.039   0.715   0.776   0.800   0.823   0.869
-    ## csig[1]            171.698   6.899 161.211 166.310 170.659 176.550 186.157
-    ## csig[2]            147.407   6.712 134.197 142.215 147.831 152.863 158.414
-    ## csig[3]            119.807   5.772 107.024 115.939 120.717 124.372 128.354
-    ## csig[4]            171.797   6.277 162.067 166.950 170.916 176.119 185.233
-    ## csig[5]            126.755   5.324 111.856 125.050 128.145 129.884 134.315
-    ## csig[6]            146.889   6.451 134.222 142.148 147.339 152.046 157.537
-    ## csig[7]            150.936   7.567 134.819 145.548 152.465 157.062 161.610
-    ## csig[8]            150.701   7.104 135.531 145.449 152.135 156.595 160.348
-    ## csig[9]            146.224   6.027 134.788 141.786 146.418 150.732 157.063
-    ## csig[10]           146.939   6.698 133.746 142.012 147.195 152.328 157.996
-    ## dsig[1]              2.554   1.605   0.291   1.378   2.315   3.367   6.306
-    ## dsig[2]              2.566   1.524   0.320   1.438   2.352   3.426   6.144
-    ## dsig[3]              2.410   1.440   0.281   1.336   2.251   3.246   5.754
-    ## dsig[4]              2.425   1.434   0.263   1.354   2.218   3.282   5.655
-    ## dsig[5]              3.021   1.856   0.504   1.713   2.713   3.890   7.778
-    ## dsig[6]              2.471   1.471   0.299   1.406   2.288   3.318   5.968
-    ## dsig[7]              2.817   1.712   0.352   1.580   2.544   3.712   7.066
-    ## dsig[8]              2.787   1.672   0.392   1.584   2.574   3.650   6.757
-    ## dsig[9]              2.432   1.377   0.313   1.412   2.271   3.239   5.588
-    ## dsig[10]             2.564   1.567   0.320   1.431   2.346   3.424   6.186
-    ## random_asig_an[1]   -0.003   0.035  -0.083  -0.017  -0.001   0.012   0.067
-    ## random_asig_an[2]   -0.004   0.033  -0.084  -0.016  -0.001   0.010   0.061
-    ## random_asig_an[3]    0.006   0.031  -0.054  -0.008   0.002   0.020   0.079
-    ## random_asig_an[4]    0.008   0.036  -0.060  -0.009   0.002   0.021   0.099
-    ## random_asig_an[5]   -0.018   0.037  -0.114  -0.033  -0.007   0.002   0.038
-    ## random_asig_an[6]    0.000   0.033  -0.074  -0.013   0.000   0.014   0.071
-    ## random_asig_an[7]    0.003   0.036  -0.073  -0.010   0.001   0.017   0.089
-    ## random_asig_an[8]    0.004   0.035  -0.070  -0.011   0.000   0.017   0.086
-    ## random_asig_an[9]    0.005   0.032  -0.059  -0.009   0.002   0.019   0.080
-    ## random_asig_an[10]  -0.002   0.032  -0.074  -0.015   0.000   0.012   0.064
-    ## random_csig_an[1]   22.353   7.242  10.302  16.822  21.557  27.244  37.540
-    ## random_csig_an[2]   -1.937   7.088 -16.049  -7.083  -1.746   3.310  10.442
-    ## random_csig_an[3]  -29.538   6.379 -43.332 -33.725 -29.005 -24.803 -18.662
-    ## random_csig_an[4]   22.453   6.645  11.301  17.455  21.846  26.922  36.280
-    ## random_csig_an[5]  -22.589   5.870 -38.030 -25.343 -21.695 -18.661 -13.628
-    ## random_csig_an[6]   -2.455   6.827 -15.938  -7.450  -2.035   2.723   9.324
-    ## random_csig_an[7]    1.592   7.824 -14.659  -4.054   2.788   7.558  13.968
-    ## random_csig_an[8]    1.356   7.365 -13.970  -3.861   2.331   6.978  13.372
-    ## random_csig_an[9]   -3.120   6.502 -15.836  -7.650  -3.111   1.495   9.280
-    ## random_csig_an[10]  -2.406   6.981 -15.935  -7.358  -2.218   2.739   9.949
-    ## random_dsig_an[1]   -0.122   1.175  -2.678  -0.555  -0.052   0.319   2.389
-    ## random_dsig_an[2]   -0.110   1.118  -2.769  -0.516  -0.038   0.319   2.221
-    ## random_dsig_an[3]   -0.266   1.164  -3.041  -0.681  -0.082   0.254   1.884
-    ## random_dsig_an[4]   -0.251   1.137  -3.047  -0.679  -0.086   0.257   1.876
-    ## random_dsig_an[5]    0.345   1.262  -1.716  -0.204   0.096   0.710   3.753
-    ## random_dsig_an[6]   -0.205   1.117  -2.899  -0.611  -0.071   0.265   1.943
-    ## random_dsig_an[7]    0.140   1.175  -2.053  -0.319   0.032   0.493   2.982
-    ## random_dsig_an[8]    0.111   1.132  -2.207  -0.343   0.020   0.509   2.692
-    ## random_dsig_an[9]   -0.245   1.131  -3.138  -0.594  -0.069   0.236   1.802
-    ## random_dsig_an[10]  -0.112   1.174  -2.676  -0.542  -0.042   0.322   2.282
-    ## sigma_asig_an       -0.005   0.041  -0.088  -0.030  -0.008   0.020   0.077
-    ## sigma_csig_an        6.003  17.520 -25.005 -14.330  14.346  18.415  28.218
-    ## sigma_dsig_an       -0.092   1.393  -2.854  -0.880  -0.120   0.674   2.793
-    ## deviance            87.386   4.508  80.543  84.197  86.564  89.919  98.193
+    ## asig[1]              0.774   0.047   0.675   0.743   0.774   0.804   0.872
+    ## asig[2]              0.788   0.051   0.693   0.756   0.784   0.819   0.897
+    ## asig[3]              0.739   0.059   0.595   0.708   0.746   0.778   0.833
+    ## asig[4]              0.776   0.048   0.684   0.747   0.776   0.805   0.874
+    ## asig[5]              0.762   0.047   0.657   0.735   0.766   0.793   0.849
+    ## asig[6]              0.761   0.051   0.651   0.732   0.765   0.794   0.854
+    ## asig[7]              0.767   0.054   0.649   0.736   0.769   0.800   0.871
+    ## asig[8]              0.745   0.055   0.613   0.714   0.752   0.782   0.838
+    ## asig[9]              0.772   0.047   0.678   0.742   0.772   0.801   0.866
+    ## asig[10]             0.763   0.049   0.659   0.733   0.765   0.795   0.855
+    ## csig[1]            147.769   4.357 137.907 145.378 148.160 150.635 155.441
+    ## csig[2]            147.978   4.344 138.200 145.543 148.305 150.849 155.590
+    ## csig[3]            153.338   6.222 143.433 149.077 152.308 157.156 167.099
+    ## csig[4]            147.840   4.395 137.612 145.326 148.277 150.800 155.463
+    ## csig[5]            148.818   4.682 138.710 146.210 149.000 151.828 157.669
+    ## csig[6]            143.396   7.047 128.529 138.508 145.181 148.815 153.557
+    ## csig[7]            144.893   7.611 126.736 141.477 146.938 150.014 155.583
+    ## csig[8]            151.236   5.216 141.393 147.848 150.839 154.404 161.962
+    ## csig[9]            148.208   4.386 138.076 145.763 148.637 151.126 155.809
+    ## csig[10]           149.131   4.643 139.257 146.324 149.240 152.154 158.044
+    ## dsig[1]              4.013   2.520   0.332   2.128   3.746   5.475   9.797
+    ## dsig[2]              4.365   2.699   0.255   2.325   4.051   5.934  10.444
+    ## dsig[3]              8.274   4.173   1.667   5.231   7.773  10.685  17.637
+    ## dsig[4]              4.315   2.823   0.288   2.195   3.921   5.842  11.226
+    ## dsig[5]              5.085   3.021   0.489   2.898   4.675   6.772  11.897
+    ## dsig[6]             10.397   4.630   3.095   7.137   9.910  13.015  21.223
+    ## dsig[7]             12.183   4.699   3.166   9.375  12.154  14.984  21.957
+    ## dsig[8]              7.297   3.680   1.290   4.804   6.810   9.310  16.039
+    ## dsig[9]              4.705   2.772   0.369   2.718   4.384   6.298  11.003
+    ## dsig[10]             5.638   3.332   0.600   3.259   5.177   7.436  13.270
+    ## random_asig_an[1]    0.010   0.043  -0.074  -0.011   0.003   0.028   0.109
+    ## random_asig_an[2]    0.024   0.047  -0.052  -0.003   0.012   0.045   0.141
+    ## random_asig_an[3]   -0.025   0.050  -0.152  -0.048  -0.011   0.003   0.048
+    ## random_asig_an[4]    0.012   0.043  -0.062  -0.008   0.004   0.030   0.118
+    ## random_asig_an[5]   -0.002   0.040  -0.092  -0.019   0.000   0.016   0.084
+    ## random_asig_an[6]   -0.003   0.044  -0.104  -0.021   0.000   0.017   0.084
+    ## random_asig_an[7]    0.003   0.046  -0.097  -0.016   0.001   0.021   0.104
+    ## random_asig_an[8]   -0.019   0.046  -0.136  -0.038  -0.008   0.005   0.061
+    ## random_asig_an[9]    0.008   0.041  -0.072  -0.012   0.002   0.026   0.102
+    ## random_asig_an[10]  -0.001   0.041  -0.090  -0.019   0.000   0.017   0.087
+    ## random_csig_an[1]   -1.015   4.035 -10.529  -2.897  -0.423   1.010   6.634
+    ## random_csig_an[2]   -0.806   4.138 -10.342  -2.824  -0.325   1.281   7.355
+    ## random_csig_an[3]    4.554   6.041  -3.884   0.139   2.836   8.132  18.543
+    ## random_csig_an[4]   -0.944   4.071 -10.703  -2.806  -0.357   1.170   7.035
+    ## random_csig_an[5]    0.034   4.463  -9.823  -2.040   0.017   2.215   9.429
+    ## random_csig_an[6]   -5.388   6.533 -20.027  -9.732  -3.320  -0.172   3.191
+    ## random_csig_an[7]   -3.891   7.001 -21.700  -6.638  -1.437   0.276   5.704
+    ## random_csig_an[8]    2.452   4.990  -6.572  -0.350   1.407   5.194  14.201
+    ## random_csig_an[9]   -0.576   4.191 -10.083  -2.523  -0.123   1.543   7.864
+    ## random_csig_an[10]   0.347   4.253  -8.733  -1.643   0.150   2.571   9.415
+    ## random_dsig_an[1]   -2.521   2.800  -7.918  -4.427  -2.521  -0.561   2.913
+    ## random_dsig_an[2]   -2.169   2.941  -7.871  -4.203  -2.044  -0.222   3.653
+    ## random_dsig_an[3]    1.740   3.843  -4.748  -0.706   1.189   3.828  10.471
+    ## random_dsig_an[4]   -2.220   3.012  -8.057  -4.230  -2.197  -0.207   3.868
+    ## random_dsig_an[5]   -1.449   3.090  -7.150  -3.518  -1.446   0.328   5.034
+    ## random_dsig_an[6]    3.862   4.109  -2.306   0.946   3.265   6.165  13.617
+    ## random_dsig_an[7]    5.649   4.143  -0.894   2.848   5.313   8.043  14.429
+    ## random_dsig_an[8]    0.763   3.512  -5.815  -1.371   0.474   2.566   8.692
+    ## random_dsig_an[9]   -1.829   2.894  -7.638  -3.833  -1.723   0.076   4.040
+    ## random_dsig_an[10]  -0.896   3.332  -6.943  -3.139  -0.881   0.975   6.157
+    ## sigma_asig_an       -0.008   0.055  -0.116  -0.042  -0.010   0.028   0.101
+    ## sigma_csig_an       -0.076   6.433 -12.421  -4.571   0.262   4.500  11.463
+    ## sigma_dsig_an       -1.258   4.857  -9.117  -4.763  -2.821   3.188   7.829
+    ## deviance           119.751   6.006 109.168 115.534 119.588 123.557 132.759
     ##                     Rhat n.eff
-    ## asig[1]            1.001  2600
-    ## asig[2]            1.001  2300
-    ## asig[3]            1.001  2900
+    ## asig[1]            1.004   560
+    ## asig[2]            1.002  1100
+    ## asig[3]            1.003   990
     ## asig[4]            1.001  3000
-    ## asig[5]            1.005   700
-    ## asig[6]            1.001  2100
-    ## asig[7]            1.001  3000
-    ## asig[8]            1.001  3000
-    ## asig[9]            1.003   910
-    ## asig[10]           1.001  2600
-    ## csig[1]            1.001  3000
+    ## asig[5]            1.001  3000
+    ## asig[6]            1.005  3000
+    ## asig[7]            1.002  3000
+    ## asig[8]            1.003   990
+    ## asig[9]            1.002  2200
+    ## asig[10]           1.001  3000
+    ## csig[1]            1.002  1100
     ## csig[2]            1.001  3000
-    ## csig[3]            1.001  3000
+    ## csig[3]            1.006   400
     ## csig[4]            1.001  3000
-    ## csig[5]            1.007   850
-    ## csig[6]            1.001  3000
-    ## csig[7]            1.001  3000
-    ## csig[8]            1.002  1100
-    ## csig[9]            1.001  2900
-    ## csig[10]           1.001  3000
-    ## dsig[1]            1.005   460
-    ## dsig[2]            1.004   520
-    ## dsig[3]            1.004   830
-    ## dsig[4]            1.004   740
-    ## dsig[5]            1.007   320
-    ## dsig[6]            1.007   460
-    ## dsig[7]            1.005   470
-    ## dsig[8]            1.010   330
-    ## dsig[9]            1.005   410
-    ## dsig[10]           1.009   240
-    ## random_asig_an[1]  1.006   720
-    ## random_asig_an[2]  1.001  3000
-    ## random_asig_an[3]  1.002  3000
-    ## random_asig_an[4]  1.002  1700
-    ## random_asig_an[5]  1.006  1000
-    ## random_asig_an[6]  1.002  3000
-    ## random_asig_an[7]  1.004  2800
-    ## random_asig_an[8]  1.002  1900
-    ## random_asig_an[9]  1.003  1200
-    ## random_asig_an[10] 1.001  3000
-    ## random_csig_an[1]  1.003  2400
-    ## random_csig_an[2]  1.001  3000
-    ## random_csig_an[3]  1.001  3000
-    ## random_csig_an[4]  1.001  3000
-    ## random_csig_an[5]  1.005   630
-    ## random_csig_an[6]  1.001  3000
-    ## random_csig_an[7]  1.001  2500
-    ## random_csig_an[8]  1.003   880
-    ## random_csig_an[9]  1.001  3000
-    ## random_csig_an[10] 1.001  2300
-    ## random_dsig_an[1]  1.010  3000
-    ## random_dsig_an[2]  1.008   600
-    ## random_dsig_an[3]  1.007   870
-    ## random_dsig_an[4]  1.005  2100
-    ## random_dsig_an[5]  1.005  2000
-    ## random_dsig_an[6]  1.008  3000
-    ## random_dsig_an[7]  1.011  3000
-    ## random_dsig_an[8]  1.001  2000
-    ## random_dsig_an[9]  1.004  2300
-    ## random_dsig_an[10] 1.018  1600
-    ## sigma_asig_an      1.048    52
-    ## sigma_csig_an      6.311     3
-    ## sigma_dsig_an      1.067    37
-    ## deviance           1.002  1700
+    ## csig[5]            1.001  3000
+    ## csig[6]            1.003   680
+    ## csig[7]            1.003   970
+    ## csig[8]            1.003   880
+    ## csig[9]            1.003   970
+    ## csig[10]           1.002  3000
+    ## dsig[1]            1.001  3000
+    ## dsig[2]            1.002  2100
+    ## dsig[3]            1.001  3000
+    ## dsig[4]            1.001  3000
+    ## dsig[5]            1.003  2100
+    ## dsig[6]            1.002  1700
+    ## dsig[7]            1.001  3000
+    ## dsig[8]            1.003  3000
+    ## dsig[9]            1.004  3000
+    ## dsig[10]           1.001  3000
+    ## random_asig_an[1]  1.007   310
+    ## random_asig_an[2]  1.003   960
+    ## random_asig_an[3]  1.005   850
+    ## random_asig_an[4]  1.002  1600
+    ## random_asig_an[5]  1.001  3000
+    ## random_asig_an[6]  1.003  3000
+    ## random_asig_an[7]  1.003  3000
+    ## random_asig_an[8]  1.005  1100
+    ## random_asig_an[9]  1.002  2500
+    ## random_asig_an[10] 1.004  3000
+    ## random_csig_an[1]  1.003   920
+    ## random_csig_an[2]  1.004  3000
+    ## random_csig_an[3]  1.007   360
+    ## random_csig_an[4]  1.001  2800
+    ## random_csig_an[5]  1.001  3000
+    ## random_csig_an[6]  1.004   600
+    ## random_csig_an[7]  1.003   840
+    ## random_csig_an[8]  1.003   740
+    ## random_csig_an[9]  1.004  1100
+    ## random_csig_an[10] 1.005  2800
+    ## random_dsig_an[1]  1.002  1600
+    ## random_dsig_an[2]  1.002  1500
+    ## random_dsig_an[3]  1.001  3000
+    ## random_dsig_an[4]  1.001  2300
+    ## random_dsig_an[5]  1.001  2500
+    ## random_dsig_an[6]  1.003   820
+    ## random_dsig_an[7]  1.001  3000
+    ## random_dsig_an[8]  1.001  3000
+    ## random_dsig_an[9]  1.001  3000
+    ## random_dsig_an[10] 1.001  3000
+    ## sigma_asig_an      1.161    17
+    ## sigma_csig_an      1.023   100
+    ## sigma_dsig_an      1.089    28
+    ## deviance           1.003   900
     ## 
     ## For each parameter, n.eff is a crude measure of effective sample size,
     ## and Rhat is the potential scale reduction factor (at convergence, Rhat=1).
     ## 
     ## DIC info (using the rule, pD = var(deviance)/2)
-    ## pD = 10.2 and DIC = 97.5
+    ## pD = 18.0 and DIC = 137.8
     ## DIC is an estimate of expected predictive error (lower deviance is better).
 
 ### quickly compare mean xmid with ‘real pheno’
@@ -394,7 +339,16 @@ data.frame(estim = md_1$BUGSoutput$mean$c,
   ggplot(aes(x = estim, y = real, label = year))+
   geom_text(vjust = 1.5)+
   geom_point()+
-  theme_bw()
+  theme_bw()+
+  stat_smooth(method = lm)
 ```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
+
+    ## Warning: The following aesthetics were dropped during statistical transformation: label
+    ## i This can happen when ggplot fails to infer the correct grouping structure in
+    ##   the data.
+    ## i Did you forget to specify a `group` aesthetic or to convert a numerical
+    ##   variable into a factor?
 
 ![](4_report_script_3_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->

@@ -11,9 +11,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Test model with simulated data
 
+
 ### Library
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 # bayesian modeling + plot
 require(R2jags)
 require(MASS)
@@ -27,6 +28,17 @@ require(bayesplot)
 
 ### Simulate data
 
+#### Assumption for simulated data 
+
+- Same number of breeders between years (5 pairs)
+- Mean number of eggs = 8 (sd = 5)
+- All chicks fledge and survive
+- Adults survive during the breeding season
+- Between years,  sessions are on the same days 
+- Birds do not migrate or immigrate during the breeding season
+- Same capture probability between juveniles and adults 
+
+
 ```{r}
 # load function 
 source("2_function_sim_data.R")
@@ -34,27 +46,29 @@ source("2_function_sim_data.R")
 Nyears = 10
 
 prod <- simul_data(
+  
   # 5 pairs of breeders per year
   n_breeders = 5,
   # Nyears
   n_years = Nyears,
+  # mean laying date for this site 
+  mean_ld_site = 120,
+  
   # CES start (julian days)
   start_ces = 100,
   # CES end (julian days)
   end_ces = 220,
   # sessions per year 
-  n_session = 5,
-  # mean laying date for this site 
-  mean_ld_site = 120)
+  n_session = 5)
 ```
 
 
 ### plot productivity through time (sim data)
 
+Productivity throught breeding period for a single site. The vertical lines represent the simulated mean laying for each year. 
 
 ```{r pressure, echo=FALSE}
 
-# vertical lines = mean laying date per year 
 prod$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
@@ -63,6 +77,8 @@ prod$capt_sess%>%
              aes(xintercept = mean_ld, 
                  color = as.character(year)), alpha = 0.8)+
   geom_line(alpha = 0.3)+
+  scale_color_discrete(name = "SIM years")+
+  xlab("Time (in Julian days)")+ylab("Productivity (N juveniles / N tot) ")+
   theme_light()
 
 ```
@@ -197,7 +213,8 @@ data.frame(estim = md_1$BUGSoutput$mean$c,
   ggplot(aes(x = estim, y = real, label = year))+
   geom_text(vjust = 1.5)+
   geom_point()+
-  theme_bw()
+  theme_bw()+
+  stat_smooth(method = lm)
 ```
 
 
