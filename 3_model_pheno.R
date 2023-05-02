@@ -3,7 +3,8 @@
 # Title : 3_model_pheno
 # Author : Paul Cuchot
 # Date : 27/04/23
-# note :
+# note : Simulate data for X years, and compare the estimated phenology 
+# with the simulated ones
 # -------------------------------------------------------------------------
 
 # Library -----------------------------------------------------------------
@@ -17,10 +18,13 @@ require(mcmcplots)
 require(tidyverse)
 require(bayesplot)
 
-# simulate data
-source("2_function_sim_data.R")
 
-Nyears = 15
+# Simulate data -----------------------------------------------------------
+
+# load function 
+source("2_function_sim_data.R")
+# number of year to simlate
+Nyears = 4
 
 prod <- simul_data(
   # 5 pairs of breeders per year
@@ -28,15 +32,17 @@ prod <- simul_data(
   # Nyears
   n_years = Nyears,
   # CES start (julian days)
-  start_ces = 80,
+  start_ces = 100,
   # CES end (julian days)
   end_ces = 220,
   # sessions per year 
-  n_session = 8,
+  n_session = 5,
   # mean laying date for this site 
   mean_ld_site = 120)
 
-# plot simulated
+
+# plot productivity through time
+# vertical lines = mean laying date per year 
 prod$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
@@ -124,10 +130,6 @@ init_f <-  function(){
   
   list(
     
-    # asig = runif(Nyears, 0.5, 1),
-    # dsig = runif(Nyears, 3,10),
-    # csig = dnorm(Nyears, 150, 20),
-    
     alpha_asig = runif(1, 0, 1),
     alpha_dsig = runif(1, 3, 10),
     alpha_csig = rnorm(1, 150, 20),
@@ -149,17 +151,6 @@ inits <- list(init1 = init_f(), init2=init_f(), init3=init_f())
 
 # Run models --------------------------------------------------------------
 
-# parameter to save md1
-# parameters <- c("asig","csig","dsig",
-#                 "sigma_csig","sigma_dsig","sigma_asig",
-#                 "mu_csig","mu_dsig","mu_asig",
-#                 "deviance"
-# )
-
-# parameter to save md2
-# parameters2 <- c("asig","csig","dsig",
-#                 "mu_csig","mu_dsig","mu_asig", 
-#                 "deviance")
 
 # parameter to save md3
 parameters3 <- c("asig","csig","dsig",
@@ -179,12 +170,9 @@ md_1 <- jags(data = data,
 
 
 # quickly compare mean xmid with 'real pheno'
-df_compare <- data.frame(estim = md_1$BUGSoutput$mean$c, 
+data.frame(estim = md_1$BUGSoutput$mean$c, 
            real = prod$mean_ld_year$mean_ld, 
-           year = 1:Nyears)
-
-# plot correlation between real and estimated phenology
-df_compare%>%
+           year = 1:Nyears)%>%
   ggplot(aes(x = estim, y = real, label = year))+
   geom_text(vjust = 1.5)+
   geom_point()+

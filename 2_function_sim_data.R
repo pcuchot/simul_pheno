@@ -13,7 +13,7 @@
 # - Adults survive 
 # - between years,  sessions are on the same days 
 # - Birds do not migrate or immigrate
-# - same capture probaility juveniles / adults 
+# - same capture probability juveniles / adults 
 
 
 
@@ -120,35 +120,35 @@ simul_data <- function(n_breeders,
               mean_ld_year = df_mean_ld))
   
 }
-
-# sim data with 
-data1 <- simul_data(
-  # 5 pairs of breeders per year
-  n_breeders = 5,
-  # 10 years
-  n_years = 10,
-  # CES start (julian days)
-  start_ces = 80,
-  # CES end (julian days)
-  end_ces = 200,
-  # sessions per year 
-  n_session = 9,
-  # mean laying date for this site 
-  mean_ld_site = 120)
-
-
-# plot productivity~day
-
-data1$capt_sess%>%
-  ggplot(aes(x = t, y = prod, color = as.character(year)))+
-  geom_point()+
-  # add leaying dates
-  geom_vline(data = data1$mean_ld_year,
-             aes(xintercept = mean_ld, 
-                 color = as.character(year)), alpha = 0.8)+
-  geom_line(alpha = 0.3)+
-  theme_light()
-
+# 
+# # sim data with 
+# data1 <- simul_data(
+#   # 5 pairs of breeders per year
+#   n_breeders = 5,
+#   # 10 years
+#   n_years = 10,
+#   # CES start (julian days)
+#   start_ces = 80,
+#   # CES end (julian days)
+#   end_ces = 200,
+#   # sessions per year 
+#   n_session = 9,
+#   # mean laying date for this site 
+#   mean_ld_site = 120)
+# 
+# 
+# # plot productivity~day
+# 
+# data1$capt_sess%>%
+#   ggplot(aes(x = t, y = prod, color = as.character(year)))+
+#   geom_point()+
+#   # add leaying dates
+#   geom_vline(data = data1$mean_ld_year,
+#              aes(xintercept = mean_ld, 
+#                  color = as.character(year)), alpha = 0.8)+
+#   geom_line(alpha = 0.3)+
+#   theme_light()
+# 
 
 
 
