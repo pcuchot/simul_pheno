@@ -218,6 +218,6 @@ data.frame(estim = md_1$BUGSoutput$mean$c,
 
 ### Function to simulate data
 
-```{r eval=F, echo=T}
+```{r eval=T, echo=T, message=TRUE, warning=TRUE}
 simul_data 
 ```
