@@ -12,12 +12,16 @@ The aim of this project is to investigate how well estimated is the phenology (u
 
 (Define space, time)
 
-## 1 - Estimate phenology without taking into account young dispersal 
+## 1 - Simulate fledging and capture data 
 
-In a study area, corresponding to the "sample area" of a capture site : 
+In a study area, corresponding to the "sample area" of a capture site :
+
 - 3-5 breeding pairs (capturable during all the study period)
+
 - Each couple lays at a time t (sample from a normal distribution N($\mu_{site}$, $\sigma_{site}$), $N_{eggs}$ sample from a Poisson distribution Pois($\lambda_{eggs}$).
-- Each egg has a probability $P_{fledge}$ to fledge. 
+
+- Each egg has a probability $P_{fledge}$ to fledge which depends on the laying date. 
+
 - Once fledge, survival of juveniles may evolve according to time (Naef‐Daenzeret al., 2001. Journal of Animal ecology, 70(5), 730-738.)
 
 Simulating CES capture protocol would just correspond in sampling $N_{sessions}$ times (every 2 weeks for instance) all the available individuals (juveniles + adults).
@@ -26,5 +30,5 @@ Save data and apply model. (different version of the model)
 
 
 
-## 2 - Including young dispersal
+
 
