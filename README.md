@@ -6,7 +6,7 @@
 We developped a method, based on the study of the productivity (proportion of juveniles among all caught individuals), which allow the estimation of : 
 - the breeding timing (xmid parameter, proxy for phenology)
 - the breeding success (asymptote parameter, final proportion of juvenile in the sampled population)
-- the variance in breeding phenology (scale parameter
+- the variance in breeding phenology (scale parameter) 
 
 The aim of this project is to investigate how well estimated is the phenology (using sigmoid bayesian approach) when parameters associated with the phenology (mean and variance of laying dates, survival, breeding success, number of breeding attempts ...) vary. For this, we want to simulate breeding phenology of a (bird) population, sample it, according to a specified sampling design, and then compare the estimated values with the simulated ones. 
 
