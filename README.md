@@ -8,7 +8,8 @@ The aim of this project is to investigate how well estimated is the phenology (u
 
 (Define space, time)
 
-## 1 - Simulate fledging and capture data
+## 1 - Simulate fledging and capture data (script 2)
+
 
 In a study area, corresponding to the "sample area" of a capture site :
 
@@ -31,3 +32,5 @@ In a study area, corresponding to the "sample area" of a capture site :
 Simulating CES capture protocol would just correspond in sampling $N_{sessions}$ times (every 2 weeks for instance) all the available individuals (juveniles + adults).
 
 Save data and apply model. (different version of the model)
+
+
