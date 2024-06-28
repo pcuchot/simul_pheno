@@ -22,9 +22,11 @@ In a study area, corresponding to the "sample area" of a capture site :
 
 -   Still need to implement:
 
-    -   varying clutch size with laying date
+    -   Varying clutch size with laying date
 
-    -   
+    -   Decreasing fledging survival throught time
+    
+    -   Varying laying date variances between years 
 
 Simulating CES capture protocol would just correspond in sampling $N_{sessions}$ times (every 2 weeks for instance) all the available individuals (juveniles + adults).
 

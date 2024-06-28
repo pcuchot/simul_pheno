@@ -10,7 +10,7 @@
 
 # - same number of breeders between years
 # - mean number of eggs = 8
-# - All chicks fledges and survive
+# - number of fledgings depends on lyaing dates
 # - Adults survive 
 # - between years,  sessions are on the same days 
 # - Birds do not migrate or immigrate
@@ -62,7 +62,7 @@ simul_data <- function(n_breeders,
                             mean = mean_ld[k], 
                             sd = sd_ld))# or sd_ld[k]
     
-    # fledglings dates 
+    # fledglings dates (50 = incubation time + rising)
     fledgl_dates <- round(ld_dates)+50
     
     # number of eggs per pair
@@ -115,8 +115,12 @@ simul_data <- function(n_breeders,
         round(rnorm(1,mean_n_capt, sd = 3)), # number of capture 
         replace = TRUE) 
       
+      # adults and juveniles have the same capture probability
+
+      
       # how many adults
       df_session[df_session$t ==i,"n_capt_adults"] <- sum(capt_indiv == 0)
+      
       # how many juveniles
       df_session[df_session$t ==i,"n_capt_juveniles"] <- sum(capt_indiv == 1) 
       
