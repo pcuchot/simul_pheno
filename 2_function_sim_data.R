@@ -43,11 +43,10 @@ simul_data <- function(n_breeders,
   
   
   # number of eggs per pair
-  
   # (should depend on the laying date)
-  
   mean_eggs <- 8
   sd_eggs <- 2
+  
   
   # final data_set
   df_site <- data.frame(t = NA,
@@ -69,14 +68,23 @@ simul_data <- function(n_breeders,
     # number of eggs per pair
     n_eggs <- abs(round(rnorm(n_breeders, mean_eggs, sd_eggs)))
     
+    
     # create a dataframe (one row per breeding pair)
     df_breed <- data.frame(
-      ld_dates = ld_dates,
-      n_eggs = n_eggs,
+      ld_date = ld_dates,
+      n_egg = n_eggs,
       fledgl_dates = fledgl_dates
     )
     
-    # sample (as CES design) 
+    # n_eggs as function of ld_dates
+    df_breed <- df_breed%>%
+      mutate(rap = ld_date/(mean_ld[k]*0.9),
+        n_eggs = round(n_eggs*(1/rap)),
+        egg_lost = n_egg - n_eggs)%>%
+      arrange(ld_date)
+      
+    
+    #### sample (as CES design) #### 
     
     # choose days for capture session
     t_capt <- round(seq(start_ces, end_ces, 
@@ -92,14 +100,13 @@ simul_data <- function(n_breeders,
                              prod = NA,
                              year = as.character(k)) 
     
-    
     for(i in t_capt){
       
       # catchable adults
       n_adults <- n_breeders * 2
       
       # catchable juveniles
-      n_juveniles <- sum(df_breed[df_breed$fledgl_dates < i ,]$n_eggs)
+      n_juveniles <- sum(df_breed[df_breed$fledgl_date < i ,]$n_eggs)
       
       # sample birds among available individuals
       capt_indiv <- sample( 
