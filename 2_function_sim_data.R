@@ -17,7 +17,6 @@
 # - same capture probability juveniles / adults 
 
 
-
 # Packages ----------------------------------------------------------------
 require(tidyverse)
 
@@ -30,16 +29,25 @@ simul_data <- function(n_breeders,
                        n_session, 
                        start_ces = 80,
                        end_ces = 120,
-                       mean_ld_site = 120){
+                       mean_ld_site = 90){
   
   # mean laying date (among breeding individuals - change between years)
   mean_ld <- round(rnorm(n_years, mean_ld_site, 15)) # (real pheno)
   
+  # variance in laying date for each year,
   sd_ld <- 7
   
+  # can vary between years (then transform as a vector)
+  # mean_var_ld <- 10
+  # sd_ld <- rnorm(n_years, mean_var_ld, 15)
+  
+  
   # number of eggs per pair
+  
+  # (should depend on the laying date)
+  
   mean_eggs <- 8
-  sd_eggs <- 5
+  sd_eggs <- 2
   
   # final data_set
   df_site <- data.frame(t = NA,
@@ -53,10 +61,10 @@ simul_data <- function(n_breeders,
     # sample n_breeders laying events
     ld_dates <- round(rnorm(n_breeders, 
                             mean = mean_ld[k], 
-                            sd = sd_ld))
+                            sd = sd_ld))# or sd_ld[k]
     
     # fledglings dates 
-    fledgl_dates <- round(ld_dates)+35
+    fledgl_dates <- round(ld_dates)+50
     
     # number of eggs per pair
     n_eggs <- abs(round(rnorm(n_breeders, mean_eggs, sd_eggs)))
@@ -94,10 +102,11 @@ simul_data <- function(n_breeders,
       n_juveniles <- sum(df_breed[df_breed$fledgl_dates < i ,]$n_eggs)
       
       # sample birds among available individuals
-      capt_indiv <- sample( # how many individuals captured
-        c(rep(0,n_adults), 
-          rep(1,n_juveniles)),
-        round(rnorm(1,mean_n_capt)), replace = TRUE)
+      capt_indiv <- sample( 
+        c(rep(0,n_adults), # adults
+          rep(1,n_juveniles)), # juveniles
+        round(rnorm(1,mean_n_capt, sd = 3)), # number of capture 
+        replace = TRUE) 
       
       # how many adults
       df_session[df_session$t ==i,"n_capt_adults"] <- sum(capt_indiv == 0)
@@ -121,21 +130,23 @@ simul_data <- function(n_breeders,
               mean_ld_year = df_mean_ld))
   
 }
+
+
 # 
-# # sim data with 
-# data1 <- simul_data(
-#   # 5 pairs of breeders per year
-#   n_breeders = 5,
-#   # 10 years
-#   n_years = 10,
-#   # CES start (julian days)
-#   start_ces = 80,
-#   # CES end (julian days)
-#   end_ces = 200,
-#   # sessions per year 
-#   n_session = 9,
-#   # mean laying date for this site 
-#   mean_ld_site = 120)
+# sim data with
+data1 <- simul_data(
+  # 5 pairs of breeders per year
+  n_breeders = 5,
+  # 10 years
+  n_years = 10,
+  # CES start (julian days)
+  start_ces = 120,
+  # CES end (julian days)
+  end_ces = 200,
+  # sessions per year
+  n_session = 9,
+  # mean laying date for this site
+  mean_ld_site = 120)
 # 
 # 
 # # plot productivity~day
@@ -145,11 +156,11 @@ simul_data <- function(n_breeders,
 #   geom_point()+
 #   # add leaying dates
 #   geom_vline(data = data1$mean_ld_year,
-#              aes(xintercept = mean_ld, 
+#              aes(xintercept = mean_ld,
 #                  color = as.character(year)), alpha = 0.8)+
 #   geom_line(alpha = 0.3)+
 #   theme_light()
-# 
+
 
 
 
