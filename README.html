@@ -251,6 +251,28 @@ if (window.hljs) {
 
 
 
+<style type="text/css">
+
+div.csl-bib-body { }
+div.csl-entry {
+clear: both;
+}
+.hanging div.csl-entry {
+margin-left:2em;
+text-indent:-2em;
+}
+div.csl-left-margin {
+min-width:2em;
+float:left;
+}
+div.csl-right-inline {
+margin-left:2em;
+padding-left:1em;
+}
+div.csl-indent {
+margin-left: 2em;
+}
+</style>
 
 
 
@@ -357,7 +379,7 @@ display: none;
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
 <p>We developped a method, based on the study of the productivity
-(proportion of juveniles among all caught individuals), which allow the
+(proportion of juveniles among all caught individuals <span class="citation">(Cuchot et al., n.d.)</span>), which allow the
 estimation of : - the breeding timing (xmid parameter, proxy for
 phenology) - the breeding success (asymptote parameter, final proportion
 of juvenile in the sampled population) - the variance in breeding
@@ -384,8 +406,8 @@ distribution Pois(<span class="math inline">\(\lambda_{eggs}\)</span>).</p></li>
 <li><p>Each egg has a probability <span class="math inline">\(P_{fledge}\)</span> to fledge which depends on the
 laying date.</p></li>
 <li><p>Once fledge, survival of juveniles may evolve according to time
-(Naef‐Daenzeret al., 2001. Journal of Animal ecology, 70(5),
-730-738.)</p></li>
+(<span class="citation">(Naef-Daenzer, Widmer, and Nuber
+2001)</span>)</p></li>
 <li><p>Still need to implement:</p>
 <ul>
 <li><p>Varying clutch size with laying date</p></li>
@@ -397,6 +419,23 @@ laying date.</p></li>
 <span class="math inline">\(N_{sessions}\)</span> times (every 2 weeks
 for instance) all the available individuals (juveniles + adults).</p>
 <p>Save data and apply model. (different version of the model)</p>
+</div>
+<div id="references" class="section level2 unnumbered">
+<h2 class="unnumbered">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-cuchot" class="csl-entry">
+Cuchot, Paul, Timothée Bonnet, Olivier Dehorter, Pierre-Yves Henry, and
+Céline Teplitsky. n.d. <span>“How Interacting Anthropogenic Pressures
+Alter the Plasticity of Breeding Time in Two Common Songbirds.”</span>
+<em>Journal of Animal Ecology</em> n/a (n/a). <a href="https://doi.org/10.1111/1365-2656.14113">https://doi.org/10.1111/1365-2656.14113</a>.
+</div>
+<div id="ref-naef-daenzer2001" class="csl-entry">
+Naef-Daenzer, Beat, Fritz Widmer, and Maria Nuber. 2001.
+<span>“Differential Post-Fledging Survival of Great and Coal Tits in
+Relation to Their Condition and Fledging Date.”</span> <em>Journal of
+Animal Ecology</em> 70 (5): 730–38. <a href="https://doi.org/10.1046/j.0021-8790.2001.00533.x">https://doi.org/10.1046/j.0021-8790.2001.00533.x</a>.
+</div>
+</div>
 </div>
 </div>
 
