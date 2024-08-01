@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 - 1 fix mean laying date
 
 
-```{r pressure, echo=TRUE, message=FALSE, warning=FALSE, echo= FALSE }
+```{r message=FALSE, warning=FALSE}
 require(tidyverse)
 require(truncnorm)
 require(R2jags)
@@ -167,7 +167,7 @@ data1 <- simul_data(n_breeders = 10, # number of pair
 
 
 
-```{r, echo = FALSE}
+```{r}
 high_var_no_sel <- data1$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
@@ -197,7 +197,7 @@ data2 <- simul_data(n_breeders = 10, # number of pair
 
 
 
-```{r, echo = FALSE}
+```{r}
 high_var_str_sel <- data2$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
@@ -226,7 +226,7 @@ data3 <- simul_data(n_breeders = 10, # number of pair
                     mean_eggs = 8)
 ```
 
-```{r, echo = FALSE}
+```{r}
 low_var_no_sel <- data3$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
@@ -256,7 +256,7 @@ data4 <- simul_data(n_breeders = 10, # number of pair
 
 3) Compare $N_{juveniles}/N_{adults}$ along season
 
-```{r, echo = FALSE}
+```{r}
 low_var_str_sel <- data4$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
@@ -271,10 +271,13 @@ low_var_str_sel <- data4$capt_sess%>%
 ```
 
 ```{r}
-gridExtra::grid.arrange(high_var_str_sel,
+plot_ <- gridExtra::grid.arrange(high_var_str_sel,
                         low_var_str_sel,
                         high_var_no_sel,
                         low_var_no_sel)
+
+plot(plot_)
+
 ```
 
 
@@ -419,12 +422,6 @@ md_1 <- jags(data = data,
              n.burnin = 50)
 ```
 
-### Look at convergence
-
-```{r}
-md_1
-```
-
 ### Assessment of pheno estimate
 
 ```{r}
@@ -448,7 +445,7 @@ data.frame(estim = md_1$BUGSoutput$mean$asig)%>%
 
 ## Explore more parameters
 
-```{r, echo = FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 
 mean_eggs_expl <- c(5,8,11,15)
 sd_ld_expl <- c(5,10,15)
@@ -456,6 +453,7 @@ selection_stre_ld_expl <- c(0,-0.005, -0.01, -0.05)
 
 res_l <- list()
 k = 1
+
 for(mean_eggs_l in mean_eggs_expl){
   
   for(sd_ld_l in sd_ld_expl){
