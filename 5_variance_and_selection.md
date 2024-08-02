@@ -1,7 +1,7 @@
 5_variance_and_selection
 ================
 Paul Cuchot
-2024-08-01
+2024-08-02
 
 ## Explore different variances in laying date and selection
 
@@ -256,19 +256,13 @@ low_var_str_sel <- data4$capt_sess%>%
 ```
 
 ``` r
-plot_ <- gridExtra::grid.arrange(high_var_str_sel,
+gridExtra::grid.arrange(high_var_str_sel,
                         low_var_str_sel,
                         high_var_no_sel,
                         low_var_no_sel)
 ```
 
 ![](5_variance_and_selection_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
-
-``` r
-plot(plot_)
-```
-
-![](5_variance_and_selection_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
 
 ## Estimate phenology, variance, final productivity with the model
 
@@ -446,11 +440,13 @@ data.frame(estim = md_1$BUGSoutput$mean$asig)%>%
 
 ## Explore more parameters
 
+Run 48 models with differents sets of simulated data:
+
 - mean_eggs_expl \<- c(5,8,11,15)
 - sd_ld_expl \<- c(5,10,15)
 - selection_stre_ld_expl \<- c(0,-0.005, -0.01, -0.05)
 
-## Phenology
+### Phenology
 
 - Only high variances in laying dates seem to affect the estimation
   phenology
@@ -485,7 +481,7 @@ data_f%>%
 
 ![](5_variance_and_selection_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
-## Productivity
+### Productivity
 
 - Selection does not affect estimation of productivity
 - Productivity is harder to assess when birds lay fewer eggs and when

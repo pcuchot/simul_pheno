@@ -1,7 +1,7 @@
 ---
 title: "5_variance_and_selection"
 author: "Paul Cuchot"
-date: "2024-08-01"
+date: "2024-08-02"
 output: github_document
 ---
 
@@ -270,13 +270,15 @@ low_var_str_sel <- data4$capt_sess%>%
   ggtitle("selection = -0.01, sd_LDate = 5")
 ```
 
+
+
 ```{r}
-plot_ <- gridExtra::grid.arrange(high_var_str_sel,
+gridExtra::grid.arrange(high_var_str_sel,
                         low_var_str_sel,
                         high_var_no_sel,
                         low_var_no_sel)
 
-plot(plot_)
+
 
 ```
 
@@ -445,6 +447,7 @@ data.frame(estim = md_1$BUGSoutput$mean$asig)%>%
 
 ## Explore more parameters
 
+Run 48 models with differents sets of simulated data:
 
 - mean_eggs_expl <- c(5,8,11,15)
 - sd_ld_expl <- c(5,10,15)
@@ -510,7 +513,7 @@ for(mean_eggs_l in mean_eggs_expl){
 
 ```
 
-## Phenology
+### Phenology
 
 - Only high variances in laying dates seem to affect the estimation phenology
 
@@ -539,8 +542,7 @@ data_f%>%
 ```
 
 
-## Productivity
-
+### Productivity
 
  - Selection does not affect estimation of productivity
  - Productivity is harder to assess when birds lay fewer eggs and when there is lower variance in laying date
