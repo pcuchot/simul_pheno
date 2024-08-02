@@ -365,7 +365,7 @@ model <- "model{
   tau_res_asig <- 1/(sigma_res_asig*sigma_res_asig)
 
   #csig an (variance is the same for both species)
-  sigma_csig_an ~ dt(0, 0.01, 1)T(0,200)
+  sigma_csig_an ~ dt(0, 0.01, 1)T(0,2000)
   tau_csig_an <- pow(sigma_csig_an, -2)
  
   # dsig an
@@ -406,7 +406,7 @@ md_1 <- jags(data = data,
     ## Graph information:
     ##    Observed stochastic nodes: 5000
     ##    Unobserved stochastic nodes: 609
-    ##    Total graph size: 45636
+    ##    Total graph size: 45637
     ## 
     ## Initializing model
 
