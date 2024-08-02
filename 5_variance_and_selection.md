@@ -329,7 +329,7 @@ model <- "model{
 
   # asymptote parameter  
   
-    asig[ii] ~ dnorm(mu_asig[ii], tau_res_asig)T(0.5,1)
+    asig[ii] ~ dnorm(mu_asig[ii], tau_res_asig)T(0.1,1)
     
     mu_asig[ii] <- mean_asymp + random_asig_an[an[ii]]
     
@@ -448,7 +448,10 @@ Run 48 models with differents sets of simulated data:
 
 ### Phenology
 
-- Only high variances in laying dates seem to affect the estimation
+- high variances in laying dates seem to affect the estimation of
+  phenology
+- Strong selection on clutch size affect the estimation of phenology
+- Mean number of eggs per clutch does not affect the estimation of
   phenology
 
 ``` r
@@ -483,7 +486,7 @@ data_f%>%
 
 ### Productivity
 
-- Selection does not affect estimation of productivity
+- Strong selection affect productivity estimates
 - Productivity is harder to assess when birds lay fewer eggs and when
   there is lower variance in laying date
 
