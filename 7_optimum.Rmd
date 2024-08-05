@@ -1,0 +1,252 @@
+---
+title: "7_optimum"
+author: "Paul Cuchot"
+date: "2024-08-05"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r message=FALSE, warning=FALSE, echo = FALSE}
+require(tidyverse)
+require(truncnorm)
+require(R2jags)
+```
+
+1) function to simulate data
+
+```{r}
+simul_data <- function(n_breeders = 1000, # number of pair
+                       n_years = 10, 
+                       n_session = 100, 
+                       start_ces = 100,
+                       end_ces = 200,
+                       mean_ld_site = 90,
+                       selection_stre_ld = -0.003,
+                       sd_ld = 7,
+                       fact_omega = 2,
+                       # mean number of eggs per pair
+                       mean_eggs = 8){
+  
+  
+  # mean laying date (among breeding individuals - change between years)
+  mean_ld <- round(rnorm(n_years, mean_ld_site, 15)) # (real pheno)
+  
+  # for selection/variance explorations
+  # mean_ld <- 100
+  
+  # final data_set
+  df_site <- data.frame(t = NA,
+                        n_capt_adults = NA,
+                        n_capt_juveniles = NA, 
+                        prod = NA,
+                        year = NA)[0,] 
+  
+  
+  for(k in 1:n_years){
+    
+    ## PHENOLOGY ##
+    
+    # sample n_breeders laying events
+    ld_dates <- round(rnorm(n_breeders, 
+                            mean = mean_ld[k], 
+                            sd = sd_ld))# or sd_ld[k]
+    
+    # fledglings dates (40 = incubation time + rising)
+    # imply that they all fledge at the same time 
+    
+    fledgl_dates <- ld_dates+40
+    
+    # number of eggs per pair
+    
+    
+    ## FECUNDITY ##
+    
+    # exponential selection function
+    # n_eggs <- rpois(n_breeders, 
+    #                 lambda = mean_eggs*exp(selection_stre_ld*ld_dates))
+    
+    
+    # optimum
+    omega2 <-  fact_omega*sd_ld  # peak width
+    
+    shiftopt <- 20  # shift of mean phenotype from optimum = delay in repro
+    
+    opt <- mean_ld[k] - shiftopt
+    
+    
+    #fitness function
+    fitness <- exp(-(ld_dates - opt)^2/(2*omega2^2))
+    
+    n_eggs <- rpois(n_breeders, 
+                    lambda = mean_eggs*fitness)
+    
+    # hist(n_eggs)
+    
+    # create a dataframe (one row per breeding pair)
+    df_breed <- data.frame(
+      ld_date = ld_dates,
+      n_egg = n_eggs,
+      fledgl_dates = fledgl_dates
+    )
+    
+    
+    #### sample (as CES design) #### 
+    
+    # choose days for capture session
+    t_capt <- round(seq(start_ces, end_ces, 
+                        length.out = n_session))
+    
+    # Number of sample individual per session (~capture effort)
+    # for now: does not vary along the season
+    
+    mean_n_capt <- 200
+    
+    # Dataframe with n_adults and n_juveniles captured per session
+    df_session <- data.frame(t = t_capt,
+                             n_capt_adults = NA,
+                             n_capt_juveniles = NA,
+                             prod = NA,
+                             year = as.character(k)) 
+    
+    for(i in t_capt){
+      
+      # catchable adults (no variation of survival during the season)
+      n_adults <- n_breeders * 2
+      
+      # catchable juveniles (no variation of survival during the season)
+      n_juveniles <- sum(df_breed[df_breed$fledgl_date < i ,]$n_egg)
+      
+      # sample birds among available individuals
+      capt_indiv <- sample( 
+        c(rep(0,n_adults), # adults
+          rep(1,n_juveniles)), # juveniles
+        rpois(1,mean_n_capt),
+        
+        replace = TRUE # allow recapture
+      ) 
+      
+      # --> adults and juveniles have the same capture probability
+      
+      # how many adults
+      df_session[df_session$t == i,"n_capt_adults"] <- sum(capt_indiv == 0)
+      
+      # how many juveniles
+      df_session[df_session$t ==i,"n_capt_juveniles"] <- sum(capt_indiv == 1) 
+      
+    }
+    
+    # calculate productivity
+    df_session <- df_session%>%
+      mutate(prod = n_capt_juveniles/(n_capt_adults+n_capt_juveniles))
+    
+    df_site <- rbind(df_site, df_session)
+    
+  }
+  
+  # df with mean ld per year ("real breeding date")
+  df_mean_ld <- data.frame(year = 1:n_years,
+                           mean_ld = mean_ld)
+  
+  return(list(capt_sess = df_site, 
+              mean_ld_year = df_mean_ld))
+  
+}
+```
+
+
+
+## Explore parameters for optimum selection function
+
+- **NON REALISTIC sampling design**
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include = FALSE}
+
+fac_omega <- c(2,5,10)
+
+res_l <- list()
+k = 1
+
+for(i in fac_omega){
+  
+  
+  data_sim <- simul_data(
+    n_breeders = 1000, # number of pair
+    n_years = 10, 
+    n_session = 100, 
+    start_ces = 100,
+    end_ces = 200,
+    mean_ld_site = 90,
+    # selection_stre_ld = -0.003,
+    sd_ld = 7,
+    fact_omega = i,
+    # mean number of eggs per pair
+    mean_eggs = 8)
+  
+  prod_f <- data_sim$capt_sess %>%
+    mutate(an = as.numeric(year))
+  
+  # data for the model
+  data <- list(nt = prod_f$n_capt_juveniles+prod_f$n_capt_adults,
+               n0 = prod_f$n_capt_juveniles,
+               date = as.numeric(prod_f$t),
+               N = nrow(prod_f),
+               N_an = length(unique(prod_f$an)),
+               an = prod_f$an)
+  
+  md_explo <- jags(data = data,
+                   parameters.to.save = parameters3,
+                   model.file = textConnection(model),
+                   n.chains = 3,
+                   n.iter = 500,
+                   n.burnin = 100)
+  
+  res_l[[k]] <- data.frame(
+    estim_pheno = md_explo$BUGSoutput$mean$csig, 
+    estim_prod = md_explo$BUGSoutput$mean$asig,
+    real_pheno = data_sim$mean_ld_year$mean_ld)
+  
+  res_l[[k]]$fact_omega <- paste(i)
+  
+  k = k+1
+  
+  
+  
+}
+
+```
+
+### Phenology
+
+```{r}
+data_f <- bind_rows(res_l)
+
+data_f%>%
+  ggplot(aes(x = estim_pheno, y = real_pheno))+
+  geom_point()+
+  stat_smooth(method = 'lm')+
+  facet_grid(fact_omega~.)+
+  ggtitle("N_years ~ N_sessions")+
+  ylim(c(50,190))
+
+```
+
+
+
+### Productivity
+
+- 
+
+```{r}
+data_f <- bind_rows(res_l)
+
+data_f%>%
+  ggplot(aes(x = estim_prod))+
+  geom_histogram(color = 'black',fill = "grey")+
+  facet_grid(fact_omega~.)
+
+```
