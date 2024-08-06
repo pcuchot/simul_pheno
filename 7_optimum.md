@@ -1,23 +1,11 @@
----
-title: "7_optimum"
-author: "Paul Cuchot"
-date: "2024-08-05"
-output: github_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-
-```{r message=FALSE, warning=FALSE, echo = FALSE}
-require(tidyverse)
-require(brms)
-```
+7_optimum
+================
+Paul Cuchot
+2024-08-05
 
 ### Function to simulate data
 
-```{r}
+``` r
 simul_data <- function(n_breeders = 1000, # number of pair
                        n_years = 10, 
                        n_session = 100, 
@@ -145,9 +133,9 @@ simul_data <- function(n_breeders = 1000, # number of pair
 }
 ```
 
-### simulate data for a single year 
-```{r}
+### simulate data for a single year
 
+``` r
 data1 <- simul_data(n_breeders = 1000, # number of pair
                     n_years = 1, 
                     n_session = 150, 
@@ -161,10 +149,9 @@ data1 <- simul_data(n_breeders = 1000, # number of pair
                     mean_eggs = 8)
 ```
 
-
 ### plot simulated data
-```{r}
 
+``` r
 data1$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
@@ -177,10 +164,12 @@ data1$capt_sess%>%
   theme_light()+ theme(legend.position = "none")+
   ggtitle("Producitivity along the breeding season",
          sub = "colored square corresponds to simulated mean laying date")
-
 ```
-### fit non linear model with brms 
-```{r}
+
+![](7_optimum_files/figure-gfm/unnamed-chunk-4-1.png)<!-- --> \### fit
+non linear model with brms
+
+``` r
 fit_loss <- brm(
   bf(
     prod ~ pinf/(1+exp((tm-t)/b)), 
@@ -193,38 +182,173 @@ fit_loss <- brm(
     prior(normal(3, 5), nlpar = "b")
   ),
   control = list(adapt_delta = 0.9))
+```
 
+    ## Compiling Stan program...
+
+    ## Start sampling
+
+    ## 
+    ## SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
+    ## Chain 1: 
+    ## Chain 1: Gradient evaluation took 9e-05 seconds
+    ## Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.9 seconds.
+    ## Chain 1: Adjust your expectations accordingly!
+    ## Chain 1: 
+    ## Chain 1: 
+    ## Chain 1: Iteration:    1 / 2000 [  0%]  (Warmup)
+    ## Chain 1: Iteration:  200 / 2000 [ 10%]  (Warmup)
+    ## Chain 1: Iteration:  400 / 2000 [ 20%]  (Warmup)
+    ## Chain 1: Iteration:  600 / 2000 [ 30%]  (Warmup)
+    ## Chain 1: Iteration:  800 / 2000 [ 40%]  (Warmup)
+    ## Chain 1: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+    ## Chain 1: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+    ## Chain 1: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+    ## Chain 1: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+    ## Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+    ## Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+    ## Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
+    ## Chain 1: 
+    ## Chain 1:  Elapsed Time: 0.352 seconds (Warm-up)
+    ## Chain 1:                0.142 seconds (Sampling)
+    ## Chain 1:                0.494 seconds (Total)
+    ## Chain 1: 
+    ## 
+    ## SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
+    ## Chain 2: 
+    ## Chain 2: Gradient evaluation took 2.2e-05 seconds
+    ## Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
+    ## Chain 2: Adjust your expectations accordingly!
+    ## Chain 2: 
+    ## Chain 2: 
+    ## Chain 2: Iteration:    1 / 2000 [  0%]  (Warmup)
+    ## Chain 2: Iteration:  200 / 2000 [ 10%]  (Warmup)
+    ## Chain 2: Iteration:  400 / 2000 [ 20%]  (Warmup)
+    ## Chain 2: Iteration:  600 / 2000 [ 30%]  (Warmup)
+    ## Chain 2: Iteration:  800 / 2000 [ 40%]  (Warmup)
+    ## Chain 2: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+    ## Chain 2: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+    ## Chain 2: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+    ## Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+    ## Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+    ## Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+    ## Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
+    ## Chain 2: 
+    ## Chain 2:  Elapsed Time: 0.443 seconds (Warm-up)
+    ## Chain 2:                0.154 seconds (Sampling)
+    ## Chain 2:                0.597 seconds (Total)
+    ## Chain 2: 
+    ## 
+    ## SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
+    ## Chain 3: 
+    ## Chain 3: Gradient evaluation took 2.7e-05 seconds
+    ## Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
+    ## Chain 3: Adjust your expectations accordingly!
+    ## Chain 3: 
+    ## Chain 3: 
+    ## Chain 3: Iteration:    1 / 2000 [  0%]  (Warmup)
+    ## Chain 3: Iteration:  200 / 2000 [ 10%]  (Warmup)
+    ## Chain 3: Iteration:  400 / 2000 [ 20%]  (Warmup)
+    ## Chain 3: Iteration:  600 / 2000 [ 30%]  (Warmup)
+    ## Chain 3: Iteration:  800 / 2000 [ 40%]  (Warmup)
+    ## Chain 3: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+    ## Chain 3: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+    ## Chain 3: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+    ## Chain 3: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+    ## Chain 3: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+    ## Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+    ## Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
+    ## Chain 3: 
+    ## Chain 3:  Elapsed Time: 0.446 seconds (Warm-up)
+    ## Chain 3:                0.146 seconds (Sampling)
+    ## Chain 3:                0.592 seconds (Total)
+    ## Chain 3: 
+    ## 
+    ## SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
+    ## Chain 4: 
+    ## Chain 4: Gradient evaluation took 2.4e-05 seconds
+    ## Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
+    ## Chain 4: Adjust your expectations accordingly!
+    ## Chain 4: 
+    ## Chain 4: 
+    ## Chain 4: Iteration:    1 / 2000 [  0%]  (Warmup)
+    ## Chain 4: Iteration:  200 / 2000 [ 10%]  (Warmup)
+    ## Chain 4: Iteration:  400 / 2000 [ 20%]  (Warmup)
+    ## Chain 4: Iteration:  600 / 2000 [ 30%]  (Warmup)
+    ## Chain 4: Iteration:  800 / 2000 [ 40%]  (Warmup)
+    ## Chain 4: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+    ## Chain 4: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+    ## Chain 4: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+    ## Chain 4: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+    ## Chain 4: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+    ## Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+    ## Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
+    ## Chain 4: 
+    ## Chain 4:  Elapsed Time: 0.486 seconds (Warm-up)
+    ## Chain 4:                0.136 seconds (Sampling)
+    ## Chain 4:                0.622 seconds (Total)
+    ## Chain 4:
+
+``` r
 fit_loss
 ```
-### plot model predictions
-```{r}
-plot(conditional_effects(fit_loss), points = TRUE)
 
+    ##  Family: gaussian 
+    ##   Links: mu = identity; sigma = identity 
+    ## Formula: prod ~ pinf/(1 + exp((tm - t)/b)) 
+    ##          pinf ~ 1
+    ##          tm ~ 1
+    ##          b ~ 1
+    ##    Data: data1$capt_sess (Number of observations: 150) 
+    ##   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+    ##          total post-warmup draws = 4000
+    ## 
+    ## Population-Level Effects: 
+    ##                Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+    ## pinf_Intercept     0.62      0.00     0.61     0.62 1.00     4360     3398
+    ## tm_Intercept     128.33      0.20   127.94   128.73 1.00     3572     2712
+    ## b_Intercept        3.30      0.17     2.97     3.63 1.00     3661     2786
+    ## 
+    ## Family Specific Parameters: 
+    ##       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+    ## sigma     0.03      0.00     0.02     0.03 1.00     3690     2636
+    ## 
+    ## Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+    ## and Tail_ESS are effective sample size measures, and Rhat is the potential
+    ## scale reduction factor on split chains (at convergence, Rhat = 1).
+
+### plot model predictions
+
+``` r
+plot(conditional_effects(fit_loss), points = TRUE)
 ```
 
-```{r}
+![](7_optimum_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+``` r
 # transform model into matrix (one raw per iteration)
 md_df <- as.data.frame(as.matrix(as.mcmc(fit_loss)))
 ```
 
+    ## Warning: as.mcmc.brmsfit is deprecated and will eventually be removed.
+
 ### estimated mean breeding time after selection (from luis doc)
+
 $est_{mean.layingdate}= t_m - 40 - log(1-pinf)$
 
-```{r}
-
+``` r
 md_df <- md_df%>%
   mutate(ld_after_selection = 
            b_tm_Intercept-40-(b_b_Intercept*log(1-b_pinf_Intercept)))
 ```
 
-
 ### estimated variance (from luis doc)
+
 - simulated laying date variance = 49 (BEFORE SELECTION)
 
 $est_{variance.layingdate}= {\pi²b²}/3$
 
-
-```{r}
+``` r
 # (pi²b²)/3
 md_df <- md_df%>%
   mutate(est_var_ld = (pi^2*b_b_Intercept^2)/3)
@@ -232,10 +356,11 @@ md_df <- md_df%>%
 print(mean(md_df$est_var_ld))
 ```
 
+    ## [1] 35.93829
 
 ### plot productivity data, with tm and estimated mean laying date
-```{r}
 
+``` r
 md_df%>%
   ggplot()+
   # estimated laying date after selection
@@ -268,13 +393,9 @@ md_df%>%
   scale_x_continuous(breaks = seq(50, 200, by = 10))+
   ggtitle("estimated ld = t_m - 40 - b log(1-pinf)",
           sub = "selection with optimum: OMEGA 2*sd_ld, sd_ld = 7")
-
 ```
 
-```{r}
+    ## Warning: Use of `md_df$ld_after_selection` is discouraged.
+    ## ℹ Use `ld_after_selection` instead.
 
-```
-
-```{r}
-
-```
+![](7_optimum_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->

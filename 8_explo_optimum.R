@@ -1,23 +1,8 @@
----
-title: "7_optimum"
-author: "Paul Cuchot"
-date: "2024-08-05"
-output: github_document
----
+library(brms)
+library(tidyverse)
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-
-```{r message=FALSE, warning=FALSE, echo = FALSE}
-require(tidyverse)
-require(brms)
-```
-
-### Function to simulate data
-
-```{r}
+# function to simulate data 
+  # - selection with optimum 
 simul_data <- function(n_breeders = 1000, # number of pair
                        n_years = 10, 
                        n_session = 100, 
@@ -59,8 +44,11 @@ simul_data <- function(n_breeders = 1000, # number of pair
     
     fledgl_dates <- ld_dates+40
     
-    ## FECUNDITY ##
+    # number of eggs per pair
     
+    
+    ## FECUNDITY ##
+  
     # optimum
     omega2 <-  fact_omega*sd_ld  # peak width
     
@@ -68,11 +56,14 @@ simul_data <- function(n_breeders = 1000, # number of pair
     
     opt <- mean_ld[k] - shiftopt
     
+    
     #fitness function
     fitness <- exp(-(ld_dates - opt)^2/(2*omega2^2))
     
     n_eggs <- rpois(n_breeders, 
                     lambda = mean_eggs*fitness)
+    
+    # hist(n_eggs)
     
     # create a dataframe (one row per breeding pair)
     df_breed <- data.frame(
@@ -143,11 +134,8 @@ simul_data <- function(n_breeders = 1000, # number of pair
               mean_ld_year = df_mean_ld))
   
 }
-```
 
-### simulate data for a single year 
-```{r}
-
+# simulate data
 data1 <- simul_data(n_breeders = 1000, # number of pair
                     n_years = 1, 
                     n_session = 150, 
@@ -159,12 +147,8 @@ data1 <- simul_data(n_breeders = 1000, # number of pair
                     fact_omega = 2,
                     # mean number of eggs per pair
                     mean_eggs = 8)
-```
 
-
-### plot simulated data
-```{r}
-
+# plot simulated data
 data1$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
@@ -174,13 +158,9 @@ data1$capt_sess%>%
              shape=23, color="black", size=3)+
   geom_line(alpha = 0.3)+
   ylim(c(0,1))+
-  theme_light()+ theme(legend.position = "none")+
-  ggtitle("Producitivity along the breeding season",
-         sub = "colored square corresponds to simulated mean laying date")
+  theme_light()+ theme(legend.position = "none")
 
-```
-### fit non linear model with brms 
-```{r}
+# fit non linear model*%>%
 fit_loss <- brm(
   bf(
     prod ~ pinf/(1+exp((tm-t)/b)), 
@@ -195,47 +175,28 @@ fit_loss <- brm(
   control = list(adapt_delta = 0.9))
 
 fit_loss
-```
-### plot model predictions
-```{r}
+
+# plot model predictions
 plot(conditional_effects(fit_loss), points = TRUE)
 
-```
-
-```{r}
-# transform model into matrix (one raw per iteration)
+# transform model into matrix of simulation
 md_df <- as.data.frame(as.matrix(as.mcmc(fit_loss)))
-```
 
-### estimated mean breeding time after selection (from luis doc)
-$est_{mean.layingdate}= t_m - 40 - log(1-pinf)$
-
-```{r}
-
+# estimated mean breeding time after selection (from luis doc)
+# t_m - 40 - b log(1-pinf)
 md_df <- md_df%>%
   mutate(ld_after_selection = 
            b_tm_Intercept-40-(b_b_Intercept*log(1-b_pinf_Intercept)))
-```
 
-
-### estimated variance (from luis doc)
-- simulated laying date variance = 49 (BEFORE SELECTION)
-
-$est_{variance.layingdate}= {\pi²b²}/3$
-
-
-```{r}
+# variance (from luis doc)
 # (pi²b²)/3
 md_df <- md_df%>%
   mutate(est_var_ld = (pi^2*b_b_Intercept^2)/3)
+# mean estimated variance = 37
+# and simulated laying date variance = 49 (BEFORE SELECTION)
 
-print(mean(md_df$est_var_ld))
-```
 
-
-### plot productivity data, with tm and estimated mean laying date
-```{r}
-
+# plot productivity data, with tm and estimated mean laying date
 md_df%>%
   ggplot()+
   # estimated laying date after selection
@@ -247,7 +208,7 @@ md_df%>%
   geom_point(data = data1$capt_sess, aes(x = t, y = prod), 
              color = "black")+
   geom_text(
-    x = 60,
+    x = 55,
     y = 0.5,
     label = 'estimated LD\n after selection',
     # size = 4, # font size
@@ -255,7 +216,7 @@ md_df%>%
     color = 'blue'
   )+
   geom_text(
-    x = 100,
+    x = 90,
     y = 0.5,
     label = 'simulated LD',
     # size = 4, # font size
@@ -269,12 +230,14 @@ md_df%>%
   ggtitle("estimated ld = t_m - 40 - b log(1-pinf)",
           sub = "selection with optimum: OMEGA 2*sd_ld, sd_ld = 7")
 
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
+  
+  
+ 
+  
+  
+  
+  
+  
+  
+  
+  
