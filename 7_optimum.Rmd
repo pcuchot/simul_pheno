@@ -180,7 +180,7 @@ data1$capt_sess%>%
 
 ```
 ### fit non linear model with brms 
-```{r}
+```{r echo=TRUE, message=FALSE, warning=FALSE}
 fit_loss <- brm(
   bf(
     prod ~ pinf/(1+exp((tm-t)/b)), 
@@ -217,6 +217,8 @@ md_df <- md_df%>%
            b_tm_Intercept-40-(b_b_Intercept*log(1-b_pinf_Intercept)))
 ```
 
+The estimated mean laying date after selection is `r mean(md_df$ld_after_selection)` while the simulated one (before selection) is `r data1$mean_ld_year[1,2]`. 
+
 
 ### estimated variance (from luis doc)
 - simulated laying date variance = 49 (BEFORE SELECTION)
@@ -231,9 +233,9 @@ md_df <- md_df%>%
 
 print(mean(md_df$est_var_ld))
 ```
+The estimated variance of laying date after selection is `r mean(md_df$est_var_ld)` while the simulated one (before selection) is 49. 
 
-
-### plot productivity data, with tm and estimated mean laying date
+### plot productivity data, with before and after selection mean laying dates
 ```{r}
 
 md_df%>%
