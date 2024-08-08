@@ -1,8 +1,19 @@
+# -----------------------------------------------------------------------------
+# title : 9_fit_model_rd_year
+# author : Paul Cuchot  
+# date : 07/08/2024
+# note : 
+# -----------------------------------------------------------------------------
+
+
+# load packages -----------------------------------------------------------
 library(brms)
 library(tidyverse)
+# -------------------------------------------------------------------------
+
 
 # function to simulate data 
-  # - selection with optimum 
+# - selection with optimum 
 simul_data <- function(n_breeders = 1000, # number of pair
                        n_years = 10, 
                        n_session = 100, 
@@ -48,7 +59,7 @@ simul_data <- function(n_breeders = 1000, # number of pair
     
     
     ## FECUNDITY ##
-  
+    
     # optimum
     omega2 <-  fact_omega*sd_ld  # peak width
     
@@ -128,7 +139,10 @@ simul_data <- function(n_breeders = 1000, # number of pair
   
   # df with mean ld per year ("real breeding date")
   df_mean_ld <- data.frame(year = 1:n_years,
+                           year_f = as.character(1:n_years),
                            mean_ld = mean_ld)
+  
+  df_site$year_f <- as.character(df_site$year)
   
   return(list(capt_sess = df_site, 
               mean_ld_year = df_mean_ld))
@@ -148,28 +162,30 @@ data1 <- simul_data(n_breeders = 1000, # number of pair
                     # mean number of eggs per pair
                     mean_eggs = 8)
 
+data1
+
 # plot simulated data
 data1$capt_sess%>%
   ggplot(aes(x = t, y = prod, color = as.character(year)))+
   geom_point()+
   geom_point(data = data1$mean_ld_year,
              aes(x = mean_ld, y = rep(0,1),
-                 fill = as.character(year)), 
+                 fill = year_f), 
              shape=23, color="black", size=3)+
   geom_line(alpha = 0.3)+
-  ylim(c(0,1))+
+  ylim(c(0,0.9))+
   theme_light()+ theme(legend.position = "none")
 
-# fit non linear model*%>%
+# fit non linear model with random year effect *%>%
 fit_loss <- brm(
   bf(
     prod ~ pinf/(1+exp((tm-t)/b)), 
-    pinf ~ 1, tm ~ 1+(1|year), b ~ 1,
+    pinf ~ 1, tm ~ 1 + (1|year), b ~ 1 ,
     nl = TRUE),
   data = data1$capt_sess, family = gaussian(link = "identity"),
   prior = c(
     prior(normal(0.7, 0.1), nlpar = "pinf"), # hist(rnorm(1000, 0.7, 0.1))
-    prior(normal(125, 40), nlpar = "tm"), # hist(rnorm(1000, 130, 40))
+    prior(normal(125, 40), nlpar = "tm"), # hist(rnorm(1000, 125, 40))
     prior(normal(3, 5), nlpar = "b")
   ),
   control = list(adapt_delta = 0.9))
@@ -177,7 +193,13 @@ fit_loss <- brm(
 fit_loss
 
 # plot model predictions
-plot(conditional_effects(fit_loss), points = TRUE)
+conditions <- data.frame(year = unique(data1$capt_sess$year))
+rownames(conditions) <- unique(data1$capt_sess$year)
+me_loss <- conditional_effects(
+  fit_loss, conditions = conditions,
+  re_formula = NULL, method = "predict"
+)
+plot(me_loss, ncol = 5, points = TRUE)
 
 # transform model into matrix of simulation
 md_df <- as.data.frame(as.matrix(as.mcmc(fit_loss)))
@@ -230,14 +252,13 @@ md_df%>%
   ggtitle("estimated ld = t_m - 40 - b log(1-pinf)",
           sub = "selection with optimum: OMEGA 2*sd_ld, sd_ld = 7")
 
-  
-  
- 
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
+
