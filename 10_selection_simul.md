@@ -256,7 +256,7 @@ saveRDS(df_simul3, "data_simul.rds")
 df_simul3 <- readRDS("data_simul.rds")
 ```
 
-#### Compare pre and post selection estimates of laying dates with varying variance (in laying dates, ${\sigma^2}_{simulated}$), optimum width (selection pressure, $~{\tilde{\omega}}$) and maximum number of eggs ($W_{max}$)
+#### Compare pre and post selection estimates of laying dates with varying variance (in laying dates, ${\sigma^2}_{simulated}$), optimum width (selection pressure, $\tilde{\omega}$) and maximum number of eggs ($W_{max}$)
 
 ![](10_selection_simul_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 

@@ -58,6 +58,7 @@ simul_data <- function(n_breeders = 1000, # number of pair
   n_eggs <- rpois(n_breeders, 
                   lambda = mean_eggs*fitness)
   
+  
   # create a dataframe (one row per breeding pair)
   df_breed <- data.frame(
     ld_date = ld_dates,
@@ -71,7 +72,7 @@ simul_data <- function(n_breeders = 1000, # number of pair
   # choose days for capture session
   t_capt <- round(seq(start_ces, end_ces, 
                       length.out = n_session))
-
+  
   mean_n_capt <- 200
   
   # Dataframe with n_adults and n_juveniles captured per session
@@ -120,7 +121,12 @@ simul_data <- function(n_breeders = 1000, # number of pair
   
   
   return(list(capt_sess = df_site, 
-              mean_ld_year = df_mean_ld))
+              mean_ld_year = df_mean_ld,
+              R_et = mean(n_eggs),
+              # mu_star = mean(fitness*ld_dates),
+              mu_star = mean_ld-(shiftopt/((fact_omega^1)+1)),
+              # var_star = var(fitness*ld_dates)))
+              var_star = ((fact_omega^2)/((fact_omega^2)+1))*(sd_ld^2)))
   
 }
 
@@ -199,7 +205,11 @@ for(omega_til in c(2,3,5, 100)){
             sim_sd_sl = sd_,
             n_eggs = n_eggs,
             omega_tilde = omega_til, 
-            sim = z)
+            sim = z,
+            R_star = data_sim$R_et,
+            var_star = data_sim$var_star,
+            mu_star = data_sim$mu_star,
+            mu = 90)
           
           k = k+1
           
@@ -242,7 +252,11 @@ for(omega_til in c(2,3,5, 100)){
             sim_sd_sl = sd_,
             n_eggs = n_eggs,
             omega_tilde = omega_til, 
-            sim = z)
+            sim = z,
+            R_star = data_sim$R_et,
+            var_star = data_sim$var_star,
+            mu_star = data_sim$mu_star,
+            mu = 90)
           
           k = k+1
           
@@ -255,132 +269,179 @@ for(omega_til in c(2,3,5, 100)){
 
 
 df_simul3 <- bind_rows(df_rec)
+saveRDS(df_simul3, "data_simul.rds")
 
 
-# phenology
-pheno_plot <- df_simul3 %>% 
-  dplyr::select(tm_m40, mu_bar_star, mu_bar, omega_tilde, sim, sim_sd_sl) %>%
-  pivot_longer( cols = c("tm_m40", "mu_bar_star", "mu_bar")) %>% 
-  group_by(sim, name,sim_sd_sl, omega_tilde)%>% 
-  summarize(est_pheno = mean(value)) %>% 
-  ggplot(aes(x = sim_sd_sl^2, y = est_pheno, color = name))+
-  geom_function(fun = function(w){90}, 
-                col = "black", size = 0.8, linetype = "dashed")+
-  geom_line(size = 1, alpha = 0.8)+
-  ylim(80,91)+
-  labs(x = "",
+# -------------------------------------------------------------------------
+# try to include real post seletcion parameters
+# -------------------------------------------------------------------------
+
+# mu phenology
+
+df_simul3 %>% 
+  dplyr::select(mu,tm_m40, mu_bar_star, mu_bar,
+                omega_tilde, sim, sim_sd_sl,n_eggs,mu_star) %>%
+  pivot_longer( cols = c("tm_m40", "mu_bar_star", "mu_bar",
+                         "mu", "mu_star")) %>%
+  group_by(sim, name,sim_sd_sl, omega_tilde, n_eggs)%>%
+  summarize(est_pheno = mean(value)) %>% as.data.frame() %>%
+  mutate(est_real = case_when(name %in% c("mu","mu_star")~"real",
+                              TRUE ~ "est"),
+         name = fct_relevel(name, c("mu","mu_star","tm_m40",
+                                    "mu_bar_star","mu_bar"))) %>%
+  ggplot(aes(group = name))+
+  geom_line(aes(x = sim_sd_sl^2, y = est_pheno, 
+                color = name, linetype = name, size = name))+
+  # ylim(80,91)+
+  labs(x = bquote({sigma^2} [laydate~simulated]),
        y = bquote(mu[laydate~estimated]),
-       color = bquote(mu))+
+       color = bquote(mu), 
+       linetype = bquote(mu),
+       size = bquote(mu)) +
   theme_bw()+
   
-  scale_color_viridis_d(labels = c(bquote(widehat(mu[z])),
-                                   bquote(widehat(mu~"*"[z])),
-                                   bquote(t[m]-T[f])), 
-                        begin = 0, end = 0.85, direction = 1)+
-  facet_grid(.~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
+  facet_grid(n_eggs~ omega_tilde, 
+             labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
+                                     rows = widehat(W[max])==.(n_eggs)))+
+  scale_color_manual(
+    labels = c(bquote(mu),
+               bquote(mu~"*"),
+               bquote(widehat(mu[z])),
+               bquote(widehat(mu~"*"[z])),
+               bquote(t[m]-T[f])),
+    breaks = c("mu", "mu_star", "tm_m40","mu_bar_star","mu_bar"),
+    values=c("brown", "orange2", "darkslateblue", 
+             "olivedrab3", "tomato1"))+
+  
+  scale_linetype_manual(
+    labels = c(bquote(mu),
+               bquote(mu~"*"),
+               bquote(widehat(mu[z])),
+               bquote(widehat(mu~"*"[z])),
+               bquote(t[m]-T[f])),
+    breaks = c("mu", "mu_star", "tm_m40","mu_bar_star","mu_bar"),
+    values = c("dashed","dashed","solid","solid","solid"))+
+  
+  scale_size_manual(
+    labels = c(bquote(mu),
+               bquote(mu~"*"),
+               bquote(widehat(mu[z])),
+               bquote(widehat(mu~"*"[z])),
+               bquote(t[m]-T[f])),
+    breaks = c("mu", "mu_star", "tm_m40","mu_bar_star","mu_bar"),
+    values = c(0.6,0.6,0.9,0.9, 0.9))+
+  theme(strip.placement = "outside",
+        strip.background = element_blank(),
+        panel.background = element_blank())
 
 
 # variance
-var_plot <- df_simul3 %>% 
-  dplyr::select(var_bar, var_bar_star, omega_tilde, sim, sim_sd_sl) %>%
-  pivot_longer( cols = c("var_bar", "var_bar_star")) %>% 
-  group_by(sim, name,sim_sd_sl, omega_tilde)%>% 
-  summarize(est_var = mean(value)) %>%
-  ggplot(aes(x = sim_sd_sl^2, y = est_var, color = name))+
+df_simul3 %>%
+  dplyr::select(var_star, var_bar, var_bar_star, omega_tilde, 
+                sim, sim_sd_sl, n_eggs) %>%
+  pivot_longer( cols = c("var_star","var_bar", "var_bar_star")) %>% 
+  group_by(sim, name, sim_sd_sl, omega_tilde, n_eggs)%>% 
+  summarize(est_var = mean(value)) %>% as.data.frame() %>% 
+  mutate(name = fct_relevel(name, c("var_star","var_bar",
+                                    "var_bar_star"))) %>%
+  ggplot(aes(group = name))+
   geom_function(fun = function(w){w}, 
-                col = "black", size = 0.8, linetype = "dashed")+
-  geom_line(size = 1, alpha = 0.8)+
-  # facet_grid(.~as.factor(omega_tilde))+
-  ylim(0,120)+
+                col = "grey67", size = 0.6, linetype = "solid")+
+  geom_line(aes(x = sim_sd_sl^2, y = est_var, 
+                color = name, 
+                linetype = name, 
+                size = name), alpha = 1)+
+  # ylim(0,120)+
   labs(x = bquote({sigma^2} [laydate~simulated]),
        y = bquote({sigma^2} [laydate~estimated]), 
-       color = bquote({sigma^2}))+
+       color = bquote({sigma^2}),
+       linetype = bquote({sigma^2}),
+       size = bquote({sigma^2}))+
   theme_bw()+
-  scale_color_viridis_d(labels = c(bquote(widehat({sigma^2} [z])),
-                                   bquote(widehat({sigma^2~"*"} [z]))), 
-                        begin = 0, end = 0.85, direction = 1)+
-  facet_grid(.~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
-
-gridExtra::grid.arrange(pheno_plot, var_plot, ncol = 1)
-
-
-# same with change in Wmax --------------------
-
-# phenology
-pheno_plot_eggs <- df_simul3 %>% 
-  dplyr::select(tm_m40, mu_bar_star, mu_bar, 
-                omega_tilde, sim, sim_sd_sl,n_eggs) %>%
-  pivot_longer( cols = c("tm_m40", "mu_bar_star", "mu_bar")) %>% 
-  group_by(sim, name,sim_sd_sl, omega_tilde, n_eggs)%>% 
-  summarize(est_pheno = mean(value)) %>% 
-  ggplot(aes(x = sim_sd_sl^2, y = est_pheno, color = name))+
-  geom_function(fun = function(w){90}, 
-                col = "black", size = 0.8, linetype = "dashed")+
-  geom_line(size = 1, alpha = 0.8)+
-  ylim(80,91)+
-  labs(x = "",
-       y = bquote(mu[laydate~estimated]),
-       color = bquote(mu))+
-  theme_bw()+
-  scale_color_viridis_d(labels = c(bquote(widehat(mu[z])),
-                                   bquote(widehat(mu~"*"[z])),
-                                   bquote(t[m]-T[f])), 
-                        begin = 0, end = 0.85, direction = 1)+
-  facet_grid(n_eggs ~ omega_tilde, 
-             labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
-
-# variance
-var_plot_eggs <- df_simul3 %>% 
-  dplyr::select(var_bar, var_bar_star, omega_tilde, sim, sim_sd_sl, n_eggs) %>%
-  pivot_longer( cols = c("var_bar", "var_bar_star")) %>% 
-  group_by(sim, name,sim_sd_sl, omega_tilde, n_eggs)%>% 
-  summarize(est_var = mean(value)) %>%
-  ggplot(aes(x = sim_sd_sl^2, y = est_var, color = name))+
-  geom_function(fun = function(w){w}, 
-                col = "black", size = 0.8, linetype = "dashed")+
-  geom_line(size = 1, alpha = 0.8)+
-  # facet_grid(.~as.factor(omega_tilde))+
-  ylim(0,120)+
-  labs(x = bquote({sigma^2} [laydate~simulated]),
-       y = bquote({sigma^2} [laydate~estimated]), 
-       color = bquote({sigma^2}))+
-  theme_bw()+
-  scale_color_viridis_d(labels = c(bquote(widehat({sigma^2} [z])),
-                                   bquote(widehat({sigma^2~"*"} [z]))), 
-                        begin = 0, end = 0.7, direction = 1)+
-  facet_grid(n_eggs~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
-
-pheno_plot_eggs
-var_plot_eggs
-
-# gridExtra::grid.arrange(pheno_plot_eggs, var_plot_eggs, ncol = 1)
+  scale_color_manual(
+    labels = c(bquote(sigma^2~"*"),
+               bquote(widehat({sigma^2})),
+               bquote(widehat({sigma^2~"*"}))),
+    breaks = c("var_star","var_bar", "var_bar_star"),
+    values=c("orange2", "darkslateblue", "olivedrab3"))+
+  
+  scale_linetype_manual(
+    labels = c(bquote(sigma^2~"*"),
+               bquote(widehat({sigma^2})),
+               bquote(widehat({sigma^2~"*"}))),
+    breaks = c("var_star","var_bar", "var_bar_star"),
+    values = c("dashed","solid","solid"))+
+  
+  scale_size_manual(
+    labels = c(bquote(sigma^2~"*"),
+               bquote(widehat({sigma^2})),
+               bquote(widehat({sigma^2~"*"}))),
+    breaks = c("var_star","var_bar", "var_bar_star"),
+    values = c(0.6,0.9,0.9))+
+  facet_grid(n_eggs~ omega_tilde, 
+             labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
+                                     rows = widehat(W[max])==.(n_eggs)))+
+  theme(strip.placement = "outside",
+        strip.background = element_blank(),
+        panel.background = element_blank())
 
 
-# Reproductive rates ------------------------------------------------------
-
-# variance
-R_plot <- df_simul3 %>% 
-  dplyr::select(R_hat, R_hat_sel, omega_tilde, sim, sim_sd_sl, n_eggs) %>%
-  pivot_longer( cols = c("R_hat", "R_hat_sel")) %>% 
+# R
+df_simul3 %>% 
+  dplyr::select(R_hat, R_hat_sel, omega_tilde, sim, sim_sd_sl, n_eggs,
+                R_star) %>%
+  pivot_longer( cols = c("R_hat", "R_hat_sel","R_star")) %>%
+  mutate(name = fct_relevel(name, c("R_star","R_hat",
+                                    "R_hat_sel"))) %>%
   group_by(sim, name, sim_sd_sl, omega_tilde, n_eggs)%>% 
   summarize(est_R = mean(value)) %>%
-  ggplot(aes(x = sim_sd_sl^2, y = est_R, color = name))+
-  # geom_function(fun = function(w){w}, 
-  #               col = "black", size = 0.8, linetype = "dashed")+
-  geom_line(size = 1, alpha = 0.8)+
+  ggplot(aes(group = name))+
+  # mean number of eggs before selection
+  geom_hline(aes(yintercept = n_eggs),
+             col = "black", size = 0.5, linetype = "dashed")+
+  
+  geom_line(aes(x = sim_sd_sl^2, y = est_R, 
+                color = name,
+                size = name,
+                linetype = name), alpha = 1)+
+  
   # facet_grid(.~as.factor(omega_tilde))+
   ylim(0,50)+
+  # xlim(15 ,100)+
   labs(x = bquote({sigma^2} [laydate~simulated]),
        y = bquote(widehat(R) [estimated]),
-       color = bquote(widehat(R)))+
+       color = bquote(widehat(R)),
+       size = bquote(widehat(R)),
+       linetype = bquote(widehat(R)))+
   theme_bw()+
-  scale_color_viridis_d(labels = c(bquote(widehat(R[p[infinity]])),
-                                   bquote(widehat(R)[sel])), 
-                        begin = 0, end = 0.85, direction = 1)+
-  facet_grid(n_eggs~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
-
-R_plot
-
+  scale_color_manual(
+    labels = c(bquote(R^"*"),
+               bquote(widehat(W[max])),
+               bquote(widehat(R[p[infinity]]))),
+    breaks = c("R_star","R_hat","R_hat_sel"),
+    values=c("orange2", "darkslateblue", 
+             "olivedrab3"))+
+  
+  scale_linetype_manual(
+    labels = c(bquote(R^"*"),
+               bquote(widehat(W[max])),
+               bquote(widehat(R[p[infinity]]))),
+    breaks  = c("R_star","R_hat","R_hat_sel"),
+    values = c("dashed","solid","solid"))+
+  
+  scale_size_manual(
+    labels = c(bquote(R^"*"),
+               bquote(widehat(W[max])),
+               bquote(widehat(R[p[infinity]]))),
+    breaks  = c("R_star","R_hat","R_hat_sel"),
+    values = c(0.6,0.9,0.9))+
+  
+  facet_grid(n_eggs~ omega_tilde, 
+             labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
+                                     rows = widehat(W[max])==.(n_eggs)))+
+  theme(strip.placement = "outside",
+        strip.background = element_blank(),
+        panel.background = element_blank())
 
 
 

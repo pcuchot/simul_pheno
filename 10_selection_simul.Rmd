@@ -122,7 +122,10 @@ simul_data <- function(n_breeders = 1000, # number of pairs
   
   
   return(list(capt_sess = df_site, 
-              mean_ld_year = df_mean_ld))
+              mean_ld_year = df_mean_ld,
+              R_et = mean(n_eggs),
+              mu_star = mean(ld_dates*fitness),
+              var_star = var(ld_dates*fitness)))
   
 }
 
@@ -130,7 +133,7 @@ simul_data <- function(n_breeders = 1000, # number of pairs
 
 #### Simulate data
 
-```{r eval=FALSE, echo = T}
+```{r eval=T, echo = T}
 shiftopt = 20
 k = 1
 z = 1
@@ -210,6 +213,8 @@ for(omega_til in c(2,3,5, 100)){
           
         }else{
           
+          var_bar = (((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3)
+          
           tm = as.data.frame(coef(md_sim))[1,1]
           b = as.data.frame(coef(md_sim))[2,1]
           pinf = as.data.frame(coef(md_sim))[3,1]
@@ -241,13 +246,20 @@ for(omega_til in c(2,3,5, 100)){
             R_hat = (2*pinf)/(1-pinf), 
             
             # when taking selection
-            R_hat_sel = n_eggs*sqrt(((omega_til^2)+1)/(omega_til^2))*exp(((shiftopt^2)/((((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3)))/(2*(omega_til^2+1))),
+            # R_hat_sel = n_eggs*sqrt(((omega_til^2)+1)/(omega_til^2))*exp(((shiftopt^2)/((((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3)))/(2*(omega_til^2+1))),
+            
+            # R_hat_sel = ((2*pinf)/(1-pinf))*sqrt(((omega_til^2)+1)/(omega_til^2))*exp(((shiftopt^2)/((((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3)))/(2*(omega_til^2+1))),
+            
+             R_hat_sel = n_eggs*sqrt(((omega_til^2)+1)/(omega_til^2))*exp(((shiftopt^2/var_bar)/((((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3)))/(2*(omega_til^2+1))),
             
             # add parameters
             sim_sd_sl = sd_,
             n_eggs = n_eggs,
             omega_tilde = omega_til, 
-            sim = z)
+            sim = z,
+            R_star = data_sim$R_et,
+            var_star = data_sim$var_star,
+            mu_star = data_sim$mu_star)
           
           k = k+1
           
@@ -267,7 +279,7 @@ saveRDS(df_simul3, "data_simul.rds")
 df_simul3 <- readRDS("data_simul.rds")
 ```
 
-#### Compare pre and post selection estimates of laying dates with varying variance (in laying dates, ${\sigma^2}_{simulated}$), optimum width (selection pressure, $~{\tilde{\omega}}$) and maximum number of eggs ($W_{max}$)
+#### Compare pre and post selection estimates of laying dates with varying variance (in laying dates, ${\sigma^2}_{simulated}$), optimum width (selection pressure, $\tilde{\omega}$) and maximum number of eggs ($W_{max}$)
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 df_simul3 %>% 
@@ -278,7 +290,7 @@ df_simul3 %>%
   summarize(est_pheno = mean(value)) %>% 
   ggplot(aes(x = sim_sd_sl^2, y = est_pheno, color = name))+
   geom_function(fun = function(w){90}, 
-                col = "black", size = 0.8, linetype = "dashed")+
+                col = "black", size = 0.5, linetype = "dashed")+
   geom_line(size = 1, alpha = 0.8)+
   # ylim(80,91)+
   labs(x = "",
@@ -289,8 +301,8 @@ df_simul3 %>%
                                    bquote(widehat(mu~"*"[z])),
                                    bquote(t[m]-T[f])), 
                         begin = 0, end = 0.85, direction = 1)+
-  facet_grid(n_eggs ~ omega_tilde, 
-             labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
+  facet_grid(n_eggs~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
+                                                          rows = widehat(W[max])==.(n_eggs)))
 
 ```
 
@@ -315,7 +327,8 @@ df_simul3 %>%
   scale_color_viridis_d(labels = c(bquote(widehat({sigma^2} [z])),
                                    bquote(widehat({sigma^2~"*"} [z]))), 
                         begin = 0, end = 0.7, direction = 1)+
-  facet_grid(n_eggs~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
+  facet_grid(n_eggs~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
+                                                          rows = widehat(W[max])==.(n_eggs)))
 
 ```
 
@@ -331,18 +344,23 @@ df_simul3 %>%
   group_by(sim, name, sim_sd_sl, omega_tilde, n_eggs)%>% 
   summarize(est_R = mean(value)) %>%
   ggplot(aes(x = sim_sd_sl^2, y = est_R, color = name))+
-  # geom_function(fun = function(w){w}, 
+  # geom_function(fun = function(w){n_eggs},
   #               col = "black", size = 0.8, linetype = "dashed")+
+  geom_hline(aes(yintercept = n_eggs),
+             col = "black", size = 0.5, linetype = "dashed")+
   geom_line(size = 1, alpha = 0.8)+
   # facet_grid(.~as.factor(omega_tilde))+
-  ylim(0,50)+
+  ylim(0,20)+
+  # xlim(15 ,100)+
   labs(x = bquote({sigma^2} [laydate~simulated]),
        y = bquote(widehat(R) [estimated]),
-       color = bquote(widehat(R)))+
+       # color = bquote(widehat(R)))+
+       color = "")+
   theme_bw()+
   scale_color_viridis_d(labels = c(bquote(widehat(R[p[infinity]])),
-                                   bquote(widehat(R)[sel])), 
+                                   bquote(widehat(W[max]))), 
                         begin = 0, end = 0.85, direction = 1)+
-  facet_grid(n_eggs~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
+  facet_grid(n_eggs~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
+                                                          rows = widehat(W[max])==.(n_eggs)))
 
 ```
