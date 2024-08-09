@@ -8,16 +8,18 @@ Paul Cuchot
 - One year, one site
 
 ``` r
-# - selection with optimum 
-simul_data <- function(n_breeders = 1000, # number of pairs
-                       n_session = 150, # number of capture session 
-                       start_ces = 50, # time at first session  
-                       end_ces = 200, # last session  
-                       sd_ld = sd_,  # sd laying date
-                       mean_ld = 90, # mean laying date
-                       fact_omega = omeg,# = omega tilde
-                       mean_eggs = 8, # mean number of eggs per pair
-                       shiftopt = 10){ # Distance to optimum  
+simul_data <- function(n_breeders = 1000, # number of pair
+                       n_session = 150, 
+                       start_ces = 50,
+                       end_ces = 200,
+                       # mean_ld_site = 90,
+                       # selection_stre_ld = -0.003,
+                       sd_ld = sd_,
+                       mean_ld = 90,
+                       fact_omega = omeg,
+                       # mean number of eggs per pair
+                       mean_eggs = 8, 
+                       shiftopt = 10){
   
   # final data_set
   df_site <- data.frame(t = NA,
@@ -50,6 +52,7 @@ simul_data <- function(n_breeders = 1000, # number of pairs
   n_eggs <- rpois(n_breeders, 
                   lambda = mean_eggs*fitness)
   
+  
   # create a dataframe (one row per breeding pair)
   df_breed <- data.frame(
     ld_date = ld_dates,
@@ -63,7 +66,7 @@ simul_data <- function(n_breeders = 1000, # number of pairs
   # choose days for capture session
   t_capt <- round(seq(start_ces, end_ces, 
                       length.out = n_session))
-
+  
   mean_n_capt <- 200
   
   # Dataframe with n_adults and n_juveniles captured per session
@@ -112,144 +115,18 @@ simul_data <- function(n_breeders = 1000, # number of pairs
   
   
   return(list(capt_sess = df_site, 
-              mean_ld_year = df_mean_ld))
+              mean_ld_year = df_mean_ld,
+              R_et = mean(n_eggs),
+              # mu_star = mean(fitness*ld_dates),
+              mu_star = mean_ld-(shiftopt/((fact_omega^1)+1)),
+              # var_star = var(fitness*ld_dates)))
+              var_star = ((fact_omega^2)/((fact_omega^2)+1))*(sd_ld^2)))
   
 }
-```
-
-#### Simulate data
-
-``` r
-shiftopt = 20
-k = 1
-z = 1
-df_rec <- list()
-n_rep <- 10
 
 
-for(omega_til in c(2,3,5, 100)){
-  
-  for(n_eggs in c(4,8,15)){ # mean laying date
-    
-    for(sd_ in seq(3,10, by = 0.1)){  # variance in laying date
-      # for(sd_ in c(2,5,10)){  # variance in laying date
-      
-      for(q in 1:n_rep){
-        
-        # simulate data
-        data_sim <- simul_data(n_breeders = 1000, # number of pairs
-                               n_session = 150, 
-                               start_ces = 50,
-                               end_ces = 200,
-                               mean_ld = 90,
-                               # selection_stre_ld = -0.003,
-                               sd_ld = sd_,
-                               fact_omega = omega_til,
-                               # mean number of eggs per pair
-                               mean_eggs = n_eggs, 
-                               shiftopt = shiftopt) 
-        
-        
-        md_sim <- try(nls(prod ~ pinf/(1+exp((tm-t)/b)),
-                          data = data_sim$capt_sess,
-                          start = list(tm = 120, b = 3, pinf = 0.6)))
-        
-        # few model don't converge, here is a way to skip them 
-        if(class(md_sim) == "try-error"){
-          
-          tm = NA
-          b = NA
-          pinf = NA
-          
-          # create data frame recording everything
-          df_rec[[k]] <- data.frame(
-            # get model parameters
-            tm = NA,
-            b = NA,
-            pinf = NA,
-            
-            # tm - 40
-            tm_m40 = NA,
-            
-            # mu bar * (mean breeding date from model parameters)
-            mu_bar_star = NA,
-            
-            # sigma bar * (variance from model parameters)
-            var_bar_star = NA,
-            
-            # mu* (from fitness function)
-            mu_bar = NA,
-            
-            # sigma* (from fitness function)
-            var_bar = NA,
-            
-            # from observed data (after selection ) 
-            R_hat = NA, 
-            
-            # when taking selection
-            R_hat_sel = NA,
-            
-            # add parameters
-            sim_sd_sl = sd_,
-            n_eggs = n_eggs,
-            omega_tilde = omega_til, 
-            sim = z)
-          
-          k = k+1
-          
-        }else{
-          
-          tm = as.data.frame(coef(md_sim))[1,1]
-          b = as.data.frame(coef(md_sim))[2,1]
-          pinf = as.data.frame(coef(md_sim))[3,1]
-          
-          # create data frame recording everything
-          df_rec[[k]] <- data.frame(
-            # get model parameters
-            tm = tm,
-            b = b,
-            pinf = pinf,
-            
-            # tm - 40
-            tm_m40 = tm - 40,
-            
-            # mu bar *  equation 13
-            mu_bar_star = tm - 40 - b*log(1-pinf),
-            
-            # sigma bar * equation 14
-            var_bar_star = ((pi^2)*b^2)/3,
-            
-            # knowing selection parameters
-            # mu bar  equation 19
-            mu_bar =  (tm - 40 - b*log(1-pinf))+(shiftopt)/((omega_til^2)+1),
-            
-            # sigma bar  equation 19
-            var_bar = (((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3),
-            
-            # from observed data (after selection ) 
-            R_hat = (2*pinf)/(1-pinf), 
-            
-            # when taking selection
-            R_hat_sel = n_eggs*sqrt(((omega_til^2)+1)/(omega_til^2))*exp(((shiftopt^2)/((((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3)))/(2*(omega_til^2+1))),
-            
-            # add parameters
-            sim_sd_sl = sd_,
-            n_eggs = n_eggs,
-            omega_tilde = omega_til, 
-            sim = z)
-          
-          k = k+1
-          
-        }
-      }
-      z = z+1
-    }
-  }
-}
-
-
-df_simul3 <- bind_rows(df_rec)
-saveRDS(df_simul3, "data_simul.rds")
+# df_simul3 <- bind_rows(df_rec)
+# saveRDS(df_simul3, "data_simul.rds")
 ```
 
 ``` r
@@ -258,11 +135,11 @@ df_simul3 <- readRDS("data_simul.rds")
 
 #### Compare pre and post selection estimates of laying dates with varying variance (in laying dates, ${\sigma^2}_{simulated}$), optimum width (selection pressure, $\tilde{\omega}$) and maximum number of eggs ($W_{max}$)
 
-![](10_selection_simul_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](10_selection_simul_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 #### Same for pre and post selection estimates of variance
 
-![](10_selection_simul_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](10_selection_simul_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 #### Same for reproductive rate
 
@@ -271,4 +148,4 @@ df_simul3 <- readRDS("data_simul.rds")
 - $\widehat{R}_{sel}$ is calculated knowing selection parameters (see
   equation 19)
 
-![](10_selection_simul_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](10_selection_simul_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
