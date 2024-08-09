@@ -1,31 +1,23 @@
-# -----------------------------------------------------------------------------
-# title : 10_explore_param_optim
-# author : Paul Cuchot  
-# date : 07/08/2024
-# note : 
-# -----------------------------------------------------------------------------
+Simulations with varying selection & variance
+================
+Paul Cuchot
+2024-08-08
 
+### Function to simulate data
 
-# load packages -----------------------------------------------------------
-library(brms)
-library(tidyverse)
-# -------------------------------------------------------------------------
+- One year, one site
 
-
-# function to simulate data 
+``` r
 # - selection with optimum 
-simul_data <- function(n_breeders = 1000, # number of pair
-                       n_session = 150, 
-                       start_ces = 50,
-                       end_ces = 200,
-                       # mean_ld_site = 90,
-                       # selection_stre_ld = -0.003,
-                       sd_ld = sd_,
-                       mean_ld = 90,
-                       fact_omega = omeg,
-                       # mean number of eggs per pair
-                       mean_eggs = 8, 
-                       shiftopt = 10){
+simul_data <- function(n_breeders = 1000, # number of pairs
+                       n_session = 150, # number of capture session 
+                       start_ces = 50, # time at first session  
+                       end_ces = 200, # last session  
+                       sd_ld = sd_,  # sd laying date
+                       mean_ld = 90, # mean laying date
+                       fact_omega = omeg,# = omega tilde
+                       mean_eggs = 8, # mean number of eggs per pair
+                       shiftopt = 10){ # Distance to optimum  
   
   # final data_set
   df_site <- data.frame(t = NA,
@@ -123,15 +115,17 @@ simul_data <- function(n_breeders = 1000, # number of pair
               mean_ld_year = df_mean_ld))
   
 }
+```
 
+#### Simulate data
 
-
-# Assess phenology estimates with varying sigma and selection -------------
+``` r
 shiftopt = 20
 k = 1
 z = 1
 df_rec <- list()
 n_rep <- 10
+
 
 for(omega_til in c(2,3,5, 100)){
   
@@ -255,133 +249,26 @@ for(omega_til in c(2,3,5, 100)){
 
 
 df_simul3 <- bind_rows(df_rec)
+saveRDS(df_simul3, "data_simul.rds")
+```
 
+``` r
+df_simul3 <- readRDS("data_simul.rds")
+```
 
-# phenology
-pheno_plot <- df_simul3 %>% 
-  dplyr::select(tm_m40, mu_bar_star, mu_bar, omega_tilde, sim, sim_sd_sl) %>%
-  pivot_longer( cols = c("tm_m40", "mu_bar_star", "mu_bar")) %>% 
-  group_by(sim, name,sim_sd_sl, omega_tilde)%>% 
-  summarize(est_pheno = mean(value)) %>% 
-  ggplot(aes(x = sim_sd_sl^2, y = est_pheno, color = name))+
-  geom_function(fun = function(w){90}, 
-                col = "black", size = 0.8, linetype = "dashed")+
-  geom_line(size = 1, alpha = 0.8)+
-  ylim(80,91)+
-  labs(x = "",
-       y = bquote(mu[laydate~estimated]),
-       color = bquote(mu))+
-  theme_bw()+
-  
-  scale_color_viridis_d(labels = c(bquote(widehat(mu[z])),
-                                   bquote(widehat(mu~"*"[z])),
-                                   bquote(t[m]-T[f])), 
-                        begin = 0, end = 0.85, direction = 1)+
-  facet_grid(.~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
+#### Compare pre and post selection estimates of laying dates with varying variance (in laying dates, ${\sigma^2}_{simulated}$), optimum width (selection pressure, $~{\tilde{\omega}}$) and maximum number of eggs ($W_{max}$)
 
+![](10_selection_simul_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-# variance
-var_plot <- df_simul3 %>% 
-  dplyr::select(var_bar, var_bar_star, omega_tilde, sim, sim_sd_sl) %>%
-  pivot_longer( cols = c("var_bar", "var_bar_star")) %>% 
-  group_by(sim, name,sim_sd_sl, omega_tilde)%>% 
-  summarize(est_var = mean(value)) %>%
-  ggplot(aes(x = sim_sd_sl^2, y = est_var, color = name))+
-  geom_function(fun = function(w){w}, 
-                col = "black", size = 0.8, linetype = "dashed")+
-  geom_line(size = 1, alpha = 0.8)+
-  # facet_grid(.~as.factor(omega_tilde))+
-  ylim(0,120)+
-  labs(x = bquote({sigma^2} [laydate~simulated]),
-       y = bquote({sigma^2} [laydate~estimated]), 
-       color = bquote({sigma^2}))+
-  theme_bw()+
-  scale_color_viridis_d(labels = c(bquote(widehat({sigma^2} [z])),
-                                   bquote(widehat({sigma^2~"*"} [z]))), 
-                        begin = 0, end = 0.85, direction = 1)+
-  facet_grid(.~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
+#### Same for pre and post selection estimates of variance
 
-gridExtra::grid.arrange(pheno_plot, var_plot, ncol = 1)
+![](10_selection_simul_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
+#### Same for reproductive rate
 
-# same with change in Wmax --------------------
+- $\widehat{R}_{p_{\infty}}$ is directly calculated from $p_{\infty}$
+  (see equation 10)
+- $\widehat{R}_{sel}$ is calculated knowing selection parameters (see
+  equation 19)
 
-# phenology
-pheno_plot_eggs <- df_simul3 %>% 
-  dplyr::select(tm_m40, mu_bar_star, mu_bar, 
-                omega_tilde, sim, sim_sd_sl,n_eggs) %>%
-  pivot_longer( cols = c("tm_m40", "mu_bar_star", "mu_bar")) %>% 
-  group_by(sim, name,sim_sd_sl, omega_tilde, n_eggs)%>% 
-  summarize(est_pheno = mean(value)) %>% 
-  ggplot(aes(x = sim_sd_sl^2, y = est_pheno, color = name))+
-  geom_function(fun = function(w){90}, 
-                col = "black", size = 0.8, linetype = "dashed")+
-  geom_line(size = 1, alpha = 0.8)+
-  ylim(80,91)+
-  labs(x = "",
-       y = bquote(mu[laydate~estimated]),
-       color = bquote(mu))+
-  theme_bw()+
-  scale_color_viridis_d(labels = c(bquote(widehat(mu[z])),
-                                   bquote(widehat(mu~"*"[z])),
-                                   bquote(t[m]-T[f])), 
-                        begin = 0, end = 0.85, direction = 1)+
-  facet_grid(n_eggs ~ omega_tilde, 
-             labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
-
-# variance
-var_plot_eggs <- df_simul3 %>% 
-  dplyr::select(var_bar, var_bar_star, omega_tilde, sim, sim_sd_sl, n_eggs) %>%
-  pivot_longer( cols = c("var_bar", "var_bar_star")) %>% 
-  group_by(sim, name,sim_sd_sl, omega_tilde, n_eggs)%>% 
-  summarize(est_var = mean(value)) %>%
-  ggplot(aes(x = sim_sd_sl^2, y = est_var, color = name))+
-  geom_function(fun = function(w){w}, 
-                col = "black", size = 0.8, linetype = "dashed")+
-  geom_line(size = 1, alpha = 0.8)+
-  # facet_grid(.~as.factor(omega_tilde))+
-  ylim(0,120)+
-  labs(x = bquote({sigma^2} [laydate~simulated]),
-       y = bquote({sigma^2} [laydate~estimated]), 
-       color = bquote({sigma^2}))+
-  theme_bw()+
-  scale_color_viridis_d(labels = c(bquote(widehat({sigma^2} [z])),
-                                   bquote(widehat({sigma^2~"*"} [z]))), 
-                        begin = 0, end = 0.7, direction = 1)+
-  facet_grid(n_eggs~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
-
-pheno_plot_eggs
-var_plot_eggs
-
-# gridExtra::grid.arrange(pheno_plot_eggs, var_plot_eggs, ncol = 1)
-
-
-# Reproductive rates ------------------------------------------------------
-
-# variance
-R_plot <- df_simul3 %>% 
-  dplyr::select(R_hat, R_hat_sel, omega_tilde, sim, sim_sd_sl, n_eggs) %>%
-  pivot_longer( cols = c("R_hat", "R_hat_sel")) %>% 
-  group_by(sim, name, sim_sd_sl, omega_tilde, n_eggs)%>% 
-  summarize(est_R = mean(value)) %>%
-  ggplot(aes(x = sim_sd_sl^2, y = est_R, color = name))+
-  # geom_function(fun = function(w){w}, 
-  #               col = "black", size = 0.8, linetype = "dashed")+
-  geom_line(size = 1, alpha = 0.8)+
-  # facet_grid(.~as.factor(omega_tilde))+
-  ylim(0,50)+
-  labs(x = bquote({sigma^2} [laydate~simulated]),
-       y = bquote(widehat(R) [estimated]),
-       color = bquote(widehat(R)))+
-  theme_bw()+
-  scale_color_viridis_d(labels = c(bquote(widehat(R[p[infinity]])),
-                                   bquote(widehat(R)[sel])), 
-                        begin = 0, end = 0.85, direction = 1)+
-  facet_grid(n_eggs~ omega_tilde, labeller = label_bquote(cols = tilde(omega)==.(omega_tilde)))
-
-R_plot
-
-
-
-
-
+![](10_selection_simul_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
