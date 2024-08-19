@@ -323,6 +323,7 @@ df_simul3 %>%
   theme(strip.placement = "outside",
         strip.background = element_blank(),
         panel.background = element_blank())
+  
 
 ```
 
