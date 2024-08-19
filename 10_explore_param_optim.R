@@ -58,7 +58,6 @@ simul_data <- function(n_breeders = 1000, # number of pair
   n_eggs <- rpois(n_breeders, 
                   lambda = mean_eggs*fitness)
   
-  
   # create a dataframe (one row per breeding pair)
   df_breed <- data.frame(
     ld_date = ld_dates,
@@ -246,7 +245,8 @@ for(omega_til in c(2,3,5, 100)){
             R_hat = (2*pinf)/(1-pinf), 
             
             # when taking selection
-            R_hat_sel = n_eggs*sqrt(((omega_til^2)+1)/(omega_til^2))*exp(((shiftopt^2)/((((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3)))/(2*(omega_til^2+1))),
+            # R_hat_sel = n_eggs*sqrt(((omega_til^2)+1)/(omega_til^2))*exp(((shiftopt^2)/((((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3)))/(2*(omega_til^2+1))),
+            R_hat_sel = n_eggs*sqrt(((omega_til^2)+1)/(omega_til^2))*exp(((shiftopt^2/ ((((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3)))/((((omega_til^2)+1)/(omega_til^2))*(((pi^2)*b^2)/3)))/(2*(omega_til^2+1))),
             
             # add parameters
             sim_sd_sl = sd_,
@@ -269,12 +269,14 @@ for(omega_til in c(2,3,5, 100)){
 
 
 df_simul3 <- bind_rows(df_rec)
-saveRDS(df_simul3, "data_simul.rds")
+# saveRDS(df_simul3, "data_simul.rds")
 
 
 # -------------------------------------------------------------------------
 # try to include real post seletcion parameters
 # -------------------------------------------------------------------------
+
+df_simul3 <- readRDS("data_simul.rds")
 
 # mu phenology
 
@@ -287,8 +289,8 @@ df_simul3 %>%
   summarize(est_pheno = mean(value)) %>% as.data.frame() %>%
   mutate(est_real = case_when(name %in% c("mu","mu_star")~"real",
                               TRUE ~ "est"),
-         name = fct_relevel(name, c("mu","mu_star","tm_m40",
-                                    "mu_bar_star","mu_bar"))) %>%
+         # name = fct_relevel(name, c("mu","mu_star","tm_m40","mu_bar_star","mu_bar"))) %>%
+         name = fct_relevel(name, c("mu","mu_star","mu_bar","tm_m40","mu_bar_star"))) %>%
   ggplot(aes(group = name))+
   geom_line(aes(x = sim_sd_sl^2, y = est_pheno, 
                 color = name, linetype = name, size = name))+
@@ -309,9 +311,10 @@ df_simul3 %>%
                bquote(widehat(mu[z])),
                bquote(widehat(mu~"*"[z])),
                bquote(t[m]-T[f])),
-    breaks = c("mu", "mu_star", "tm_m40","mu_bar_star","mu_bar"),
-    values=c("brown", "orange2", "darkslateblue", 
-             "olivedrab3", "tomato1"))+
+    # breaks = c("mu", "mu_star", "tm_m40","mu_bar_star","mu_bar"),
+    breaks = c("mu","mu_star","mu_bar","mu_bar_star","tm_m40"),
+    values=c("brown", "orange2", 
+             "darkslateblue", "olivedrab3", "tomato1"))+
   
   scale_linetype_manual(
     labels = c(bquote(mu),
@@ -333,6 +336,7 @@ df_simul3 %>%
   theme(strip.placement = "outside",
         strip.background = element_blank(),
         panel.background = element_blank())
+
 
 
 # variance
@@ -442,6 +446,7 @@ df_simul3 %>%
   theme(strip.placement = "outside",
         strip.background = element_blank(),
         panel.background = element_blank())
+  
 
 
 
