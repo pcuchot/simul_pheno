@@ -297,45 +297,57 @@ df_simul3 %>%
   # ylim(80,91)+
   labs(x = bquote({sigma^2} [laydate~simulated]),
        y = bquote(mu[laydate~estimated]),
-       color = bquote(mu), 
-       linetype = bquote(mu),
-       size = bquote(mu)) +
+       color = "Fledging phenology", 
+       linetype = "Fledging phenology",
+       size = "Fledging phenology") +
   theme_bw()+
   
   facet_grid(n_eggs~ omega_tilde, 
              labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
                                      rows = widehat(W[max])==.(n_eggs)))+
   scale_color_manual(
-    labels = c(bquote(mu),
-               bquote(mu~"*"),
-               bquote(widehat(mu[z])),
-               bquote(widehat(mu~"*"[z])),
-               bquote(t[m]-T[f])),
+    # labels = c(bquote(mu),
+    #            bquote(mu~"*"),
+    #            bquote(widehat(mu[z])),
+    #            bquote(widehat(mu~"*"[z])),
+    #            bquote(t[m]-T[f])),
+    labels = c("True before selection",
+               "True after selection",
+               "Estimated from midpoint",
+               "Corrected from midpoint",
+               "Corrected for selection"),
     # breaks = c("mu", "mu_star", "tm_m40","mu_bar_star","mu_bar"),
-    breaks = c("mu","mu_star","mu_bar","mu_bar_star","tm_m40"),
-    values=c("brown", "orange2", 
-             "darkslateblue", "olivedrab3", "tomato1"))+
+    breaks = c("mu","mu_star","tm_m40","mu_bar_star","mu_bar"),
+    values=c("brown", "orange2","tomato1","darkslateblue", "olivedrab3" ))+
   
   scale_linetype_manual(
-    labels = c(bquote(mu),
-               bquote(mu~"*"),
-               bquote(widehat(mu[z])),
-               bquote(widehat(mu~"*"[z])),
-               bquote(t[m]-T[f])),
+    labels = c("True before selection",
+               "True after selection",
+               "Estimated from midpoint",
+               "Corrected from midpoint",
+               "Corrected for selection"),
     breaks = c("mu", "mu_star", "tm_m40","mu_bar_star","mu_bar"),
     values = c("dashed","dashed","solid","solid","solid"))+
   
   scale_size_manual(
-    labels = c(bquote(mu),
-               bquote(mu~"*"),
-               bquote(widehat(mu[z])),
-               bquote(widehat(mu~"*"[z])),
-               bquote(t[m]-T[f])),
+    # labels = c(bquote(mu),
+    #            bquote(mu~"*"),
+    #            bquote(widehat(mu[z])),
+    #            bquote(widehat(mu~"*"[z])),
+    #            bquote(t[m]-T[f])),
+    labels = c("True before selection",
+               "True after selection",
+               "Estimated from midpoint",
+               "Corrected from midpoint",
+               "Corrected for selection"),
     breaks = c("mu", "mu_star", "tm_m40","mu_bar_star","mu_bar"),
     values = c(0.6,0.6,0.9,0.9, 0.9))+
   theme(strip.placement = "outside",
         strip.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        legend.position = "bottom",
+        legend.direction = "horizontal")+
+  guides(color=guide_legend(nrow=2,byrow=TRUE))
 
 
 
@@ -343,51 +355,60 @@ df_simul3 %>%
 df_simul3 %>%
   dplyr::select(var_star, var_bar, var_bar_star, omega_tilde, 
                 sim, sim_sd_sl, n_eggs) %>%
-  pivot_longer( cols = c("var_star","var_bar", "var_bar_star")) %>% 
+  mutate(sim_sd = sim_sd_sl^2)%>%
+  pivot_longer(cols = c("sim_sd", "var_star","var_bar", "var_bar_star")) %>% 
   group_by(sim, name, sim_sd_sl, omega_tilde, n_eggs)%>% 
   summarize(est_var = mean(value)) %>% as.data.frame() %>% 
-  mutate(name = fct_relevel(name, c("var_star","var_bar",
-                                    "var_bar_star"))) %>%
+  mutate(name = fct_relevel(name, c("sim_sd", "var_star","var_bar_star","var_bar"))) %>%
   ggplot(aes(group = name))+
-  geom_function(fun = function(w){w}, 
-                col = "grey67", size = 0.6, linetype = "solid")+
+  # geom_function(fun = function(w){w}, 
+  #               col = "grey67", size = 0.6, linetype = "dashed")+
   geom_line(aes(x = sim_sd_sl^2, y = est_var, 
                 color = name, 
                 linetype = name, 
                 size = name), alpha = 1)+
+  # geom_line(aes(x = sim_sd_sl^2, y = sim_sd_sl^2, 
+  #               linetype = 'dashed', color = "grey",
+  #               size = name), alpha = 0.8)+
   # ylim(0,120)+
   labs(x = bquote({sigma^2} [laydate~simulated]),
        y = bquote({sigma^2} [laydate~estimated]), 
-       color = bquote({sigma^2}),
-       linetype = bquote({sigma^2}),
-       size = bquote({sigma^2}))+
+       color = "Lay date variance",
+       linetype = "Lay date variance",
+       size = "Lay date variance")+
   theme_bw()+
   scale_color_manual(
-    labels = c(bquote(sigma^2~"*"),
-               bquote(widehat({sigma^2})),
-               bquote(widehat({sigma^2~"*"}))),
-    breaks = c("var_star","var_bar", "var_bar_star"),
-    values=c("orange2", "darkslateblue", "olivedrab3"))+
+    labels = c("True, before selection",
+               "True, after selection",
+               "Estimated (after selection)",
+               "Corrected from selection"),
+    breaks = c("sim_sd","var_star","var_bar_star","var_bar"),
+    values=c("grey","orange2", "darkslateblue", "olivedrab3"))+
   
   scale_linetype_manual(
-    labels = c(bquote(sigma^2~"*"),
-               bquote(widehat({sigma^2})),
-               bquote(widehat({sigma^2~"*"}))),
-    breaks = c("var_star","var_bar", "var_bar_star"),
-    values = c("dashed","solid","solid"))+
+    labels = c("True, before selection",
+               "True, after selection",
+               "Estimated (after selection)",
+               "Corrected from selection"),
+    breaks = c("sim_sd","var_star","var_bar", "var_bar_star"),
+    values = c("dashed","dashed","solid","solid"))+
   
   scale_size_manual(
-    labels = c(bquote(sigma^2~"*"),
-               bquote(widehat({sigma^2})),
-               bquote(widehat({sigma^2~"*"}))),
-    breaks = c("var_star","var_bar", "var_bar_star"),
-    values = c(0.6,0.9,0.9))+
+    labels = c("True, before selection",
+               "True, after selection",
+               "Estimated (after selection)",
+               "Corrected from selection"),
+    breaks = c("sim_sd","var_star","var_bar", "var_bar_star"),
+    values = c(0.6,0.6,0.9,0.9))+
   facet_grid(n_eggs~ omega_tilde, 
              labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
                                      rows = widehat(W[max])==.(n_eggs)))+
   theme(strip.placement = "outside",
         strip.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        legend.position = "bottom",
+        legend.direction = "horizontal")+
+  guides(color=guide_legend(nrow=2,byrow=TRUE))
 
 
 # R
@@ -399,6 +420,8 @@ df_simul3 %>%
                                     "R_hat_sel"))) %>%
   group_by(sim, name, sim_sd_sl, omega_tilde, n_eggs)%>% 
   summarize(est_R = mean(value)) %>%
+  filter(est_R<20) %>% 
+  
   ggplot(aes(group = name))+
   # mean number of eggs before selection
   geom_hline(aes(yintercept = n_eggs),
@@ -410,7 +433,7 @@ df_simul3 %>%
                 linetype = name), alpha = 1)+
   
   # facet_grid(.~as.factor(omega_tilde))+
-  ylim(0,50)+
+  # ylim(0,50)+
   # xlim(15 ,100)+
   labs(x = bquote({sigma^2} [laydate~simulated]),
        y = bquote(widehat(R) [estimated]),
@@ -439,10 +462,17 @@ df_simul3 %>%
                bquote(widehat(R[p[infinity]]))),
     breaks  = c("R_star","R_hat","R_hat_sel"),
     values = c(0.6,0.9,0.9))+
-  
-  facet_grid(n_eggs~ omega_tilde, 
+  # coord_flip()+
+  # facet_grid(n_eggs~ omega_tilde, 
+  #            labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
+  #                                    rows = widehat(W[max])==.(n_eggs)), 
+  #            scales = "free", space = "fixed")+
+  ggh4x::facet_grid2(n_eggs~ omega_tilde, 
              labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
-                                     rows = widehat(W[max])==.(n_eggs)))+
+                                     rows = widehat(W[max])==.(n_eggs)), 
+             scales = "free_y", independent = "none")+
+  
+  # coord_flip()+
   theme(strip.placement = "outside",
         strip.background = element_blank(),
         panel.background = element_blank())

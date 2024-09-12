@@ -183,26 +183,6 @@ df_simul3 %>%
     values=c("brown", "orange2", "darkslateblue", 
              "olivedrab3", "tomato1"))+
   
-  scale_linetype_manual(
-    labels = c(bquote(mu),
-               bquote(mu~"*"),
-               bquote(widehat(mu[z])),
-               bquote(widehat(mu~"*"[z])),
-               bquote(t[m]-T[f])),
-    breaks = c("mu", "mu_star", "tm_m40","mu_bar_star","mu_bar"),
-    values = c("dashed","dashed","solid","solid","solid"))+
-  
-  scale_size_manual(
-    labels = c(bquote(mu),
-               bquote(mu~"*"),
-               bquote(widehat(mu[z])),
-               bquote(widehat(mu~"*"[z])),
-               bquote(t[m]-T[f])),
-    breaks = c("mu", "mu_star", "tm_m40","mu_bar_star","mu_bar"),
-    values = c(0.6,0.6,0.9,0.9, 0.9))+
-  theme(strip.placement = "outside",
-        strip.background = element_blank(),
-        panel.background = element_blank())
 
 
 ```
