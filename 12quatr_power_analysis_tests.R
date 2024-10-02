@@ -1,8 +1,9 @@
 # -----------------------------------------------------------------------------
-# title : 12bis_power_analysis
+# title : 12quatr_power_analysis_tests
 # author : Paul Cuchot  
 # date : 04/09/2024
-# note : update with brouillon on my desk
+# note : - random site for slope
+#        - lot of capture sessions 
 # -----------------------------------------------------------------------------
 
 # load packages -----------------------------------------------------------
@@ -13,21 +14,22 @@ library(tidyverse)
 
 data_md <- data.frame()
 
-n_sites = 150
-rp <- 10 # number of repetition per simulation 
+n_sites = 100
+rp <- 1 # number of repetition per simulation 
 
-for(n_sess in c(10,5)){ # UK, FRP
-  # for(n_sess in c(10)){ # UK, FRP
+# for(n_sess in c(10,5)){ # UK, FRP
+for(n_sess in c(70)){ # UK, FRP
   for(sd_ld_ in c(4,8)){ # within site variance in ld
-    # for(sd_ld_ in c(4)){ # within site variance in ld
+  # for(sd_ld_ in c(4)){ # within site variance in ld
     
-    for(sd_betw in seq(0,10, length.out = 30)){ # for a gradient of between site variance
+    for(sd_betw in seq(0,10, length.out = 10)){ # for a gradient of between site variance
       
       for (z in 1:rp){
         
         data_int <- data.frame()
         
         for(n_site in 1:n_sites){ # 
+          
           
           mean_ld_site <- rnorm(1, mean = 90, sd = sd_betw)
           
@@ -61,7 +63,7 @@ for(n_sess in c(10,5)){ # UK, FRP
         fit <- brm(
           bf(
             prod ~ pinf/(1+exp((tm-t)/b)), 
-            pinf ~ 1, tm ~ 1 + (1|site), b ~ 1 ,
+            pinf ~ 1, tm ~ 1 + (1|site), b ~ 1,# + (1|site) ,
             nl = TRUE),
           data = data_int, family = gaussian(link = "identity"),
           prior = c(
@@ -116,48 +118,22 @@ for(n_sess in c(10,5)){ # UK, FRP
         print(paste("sd_betw =", sd_betw))
         print(paste("z =", z))
         
-        # full but n_rep = 5
-        # saveRDS(data_md, "data_power_analysis2.rds")
+        # model with random slope
+        # saveRDS(data_md, "data_power_analysis_rd_slope.rds")
         
-        # n_rep = 10
-        # saveRDS(data_md, "data_power_analysis3.rds")
-        
-        # saveRDS(data_md, "data_power_analysis4.rds")
-        
-        
-        # re run n_seesion = 10, sd_ld = 4, betw_sd = 0:1.7
-        saveRDS(data_md, "data_power_analysis5.rds")
+        # model lot of sessions
+        saveRDS(data_md, "data_power_analysis_lot_sess.rds")
         
       }
     }
   }
 }
 
-# saveRDS(data_md, "data_power_analysis2.rds")
 
 
 # -------------------------------------------------------------------------
-# data_md <- readRDS("data_power_analysis2.rds")
+data_md <- readRDS("data_power_analysis_rd_slope.rds")
 
-# more replicates and no selection
-
-# goes until 5,8,3.79 (r crashed after)
-data_md3 <- readRDS("data_power_analysis3.rds")
-
-# goes from 5,8,3.79 (r crashed after)
-data_md4 <- readRDS("data_power_analysis4.rds")
-
-# Remove n_seesion = 10, sd_ld = 4, betw_sd = 0:1.7
-data_repl <- readRDS("data_power_analysis5.rds") %>% 
-  mutate(it = paste(n_sess, sl_ld, sd_betw))
-
-
-data_md <- rbind(data_md3, data_md4) %>%
-  mutate(it = paste(n_sess, sl_ld, sd_betw)) %>% 
-  filter(!it %in% data_repl$it)%>%
-  # add corresponding (data_power_analysis5.rds)
-  rbind(data_repl)
-  
 
 
 # plot grand mean
@@ -187,12 +163,12 @@ pheno_plot <- data_md %>%
        y = "Estimated phenology",
        color = "Within site sd",
        fill = "Within site sd")+
-  theme(strip.placement = "",
-        strip.text.x = element_blank(),
+  theme(strip.placement = "outside",
+        # strip.text = "",
         strip.background = element_blank(),
         panel.background = element_blank(),
         legend.position = "None"
-        )+
+  )+
   scale_color_viridis_d(end = 0.8)+
   scale_fill_viridis_d(end = 0.8)
 
@@ -293,86 +269,5 @@ gridExtra::grid.arrange(pheno_plot, var_plot, intra_var_plot,
                         nrow = 3)
 
 
-# Add tm and b estimations  -----------------------------------------------
-
-# plot tm 
-
-tm_plot <- data_md %>% 
-  group_by(n_sess, sl_ld, sd_betw) %>%
-  summarise(mean_est_tm = mean(mean_tm),
-            min_tm = mean(mean_tm)- sd(mean_tm),
-            max_tm = mean(mean_tm)+sd(mean_tm)) %>% 
-  # mutate(rp2 = paste(n_sess, sl_ld, rp)) %>% 
-  ggplot(aes(x = sd_betw, #group = rp2,
-             color = as.factor(sl_ld)))+
-  geom_ribbon(aes(ymin =  min_tm, 
-                  ymax = max_tm,
-                  fill = as.factor(sl_ld)), alpha = 0.3) + 
-  geom_line(aes(y = mean_est_tm), size = 0.8)+
-  # geom_function(fun = function(w){w},
-  #               col = "grey67", size = 0.6, linetype = "dashed")+
-  # coord_fixed() +
-  facet_grid(.~n_sess,
-             labeller = label_bquote(cols = "N sessions"==.(n_sess)),
-             space = "fixed")+
-  
-  theme_bw()+
-  labs(x = "",
-       y = "tm",
-       color = "Within site sd",
-       fill = "Within site sd")+
-  theme(strip.placement = "outside",
-        # strip.text = "",
-        # strip.text.x = element_blank(),
-        strip.background = element_blank(),
-        panel.background = element_blank(),
-        legend.position = "None"
-  )+
-  scale_color_viridis_d(end = 0.8)+
-  scale_fill_viridis_d(end = 0.8)
-
-tm_plot
-
-# plot b 
-
-b_plot <- data_md %>% 
-  group_by(n_sess, sl_ld, sd_betw) %>%
-  summarise(mean_est_b = mean(mean_b),
-            min_b = mean(mean_b)- sd(mean_b),
-            max_b = mean(mean_b)+sd(mean_b)) %>% 
-  # mutate(rp2 = paste(n_sess, sl_ld, rp)) %>% 
-  ggplot(aes(x = sd_betw, #group = rp2,
-             color = as.factor(sl_ld)))+
-  geom_ribbon(aes(ymin =  min_b, 
-                  ymax = max_b,
-                  fill = as.factor(sl_ld)), alpha = 0.3) + 
-  geom_line(aes(y = mean_est_b), size = 0.8)+
-  # geom_function(fun = function(w){w},
-  #               col = "grey67", size = 0.6, linetype = "dashed")+
-  # coord_fixed() +
-  facet_grid(.~n_sess,
-             labeller = label_bquote(cols = "N sessions"==.(n_sess)),
-             space = "fixed")+
-  
-  theme_bw()+
-  labs(x = "",
-       y = "b",
-       color = "Within site sd",
-       fill = "Within site sd")+
-  theme(strip.placement = "outside",
-        # strip.text = "",
-        strip.text.x = element_blank(),
-        strip.background = element_blank(),
-        panel.background = element_blank(),
-        legend.position = "None"
-  )+
-  scale_color_viridis_d(end = 0.8)+
-  scale_fill_viridis_d(end = 0.8)
-
-b_plot
 
 
-gridExtra::grid.arrange(tm_plot, 
-                        b_plot, 
-                        pheno_plot, var_plot, intra_var_plot,
-                        nrow = 5)

@@ -1,8 +1,8 @@
 # -----------------------------------------------------------------------------
-# title : 12bis_power_analysis
+# title : 12ter_power_analysis_no_sel
 # author : Paul Cuchot  
-# date : 04/09/2024
-# note : update with brouillon on my desk
+# date : 01/10/2024
+# note : 
 # -----------------------------------------------------------------------------
 
 # load packages -----------------------------------------------------------
@@ -11,15 +11,138 @@ library(tidyverse)
 # -------------------------------------------------------------------------
 
 
+# Simulation function -----------------------------------------------------
+simul_data_no_sel <- function(n_breeders = 1000, # number of pair
+                       n_session = 150, 
+                       start_ces = 50,
+                       end_ces = 200,
+                       # mean_ld_site = 90,
+                       # selection_stre_ld = -0.003,
+                       sd_ld = sd_,
+                       mean_ld = 90,
+                       fact_omega = omeg,
+                       # mean number of eggs per pair
+                       mean_eggs = 8, 
+                       shiftopt = 10){
+  
+  # final data_set
+  df_site <- data.frame(t = NA,
+                        n_capt_adults = NA,
+                        n_capt_juveniles = NA, 
+                        prod = NA,
+                        year = NA)[0,] 
+  
+  ## PHENOLOGY ##
+  
+  # sample n_breeders laying events
+  ld_dates <- round(rnorm(n_breeders, 
+                          mean = mean_ld, 
+                          sd = sd_ld))# or sd_ld[k]
+  
+  # fledglings dates (40 = incubation time + rising)
+  # imply that they all fledge at the same time 
+  
+  fledgl_dates <- ld_dates+40
+  
+  ## FECUNDITY ##
+  
+  # optimum
+  omega2 <-  fact_omega*sd_ld  # peak width
+  opt <- mean_ld - shiftopt
+  
+  #fitness function
+  # fitness <- exp(-(ld_dates - opt)^2/(2*omega2^2))
+  
+  n_eggs <- rpois(n_breeders, 
+                  lambda = mean_eggs#*fitness
+                  )
+  
+  # create a dataframe (one row per breeding pair)
+  df_breed <- data.frame(
+    ld_date = ld_dates,
+    n_egg = n_eggs,
+    fledgl_dates = fledgl_dates
+  )
+  
+  
+  #### sample (as CES design) #### 
+  
+  # choose days for capture session
+  t_capt <- round(seq(start_ces, end_ces, 
+                      length.out = n_session))
+  
+  # mean_n_capt <- 200
+  mean_n_capt <- 10
+  
+  # Dataframe with n_adults and n_juveniles captured per session
+  df_session <- data.frame(t = t_capt,
+                           n_capt_adults = NA,
+                           n_capt_juveniles = NA,
+                           prod = NA,
+                           year = as.character(k)) 
+  
+  for(i in t_capt){
+    
+    # catchable adults (no variation of survival during the season)
+    n_adults <- n_breeders * 2
+    
+    # catchable juveniles (no variation of survival during the season)
+    n_juveniles <- sum(df_breed[df_breed$fledgl_date < i ,]$n_egg)
+    
+    # sample birds among available individuals
+    capt_indiv <- sample( 
+      c(rep(0,n_adults), # adults
+        rep(1,n_juveniles)), # juveniles
+      rpois(1,mean_n_capt),
+      
+      replace = TRUE # allow recapture
+    ) 
+    
+    # --> adults and juveniles have the same capture probability
+    
+    # how many adults
+    df_session[df_session$t == i,"n_capt_adults"] <- sum(capt_indiv == 0)
+    
+    # how many juveniles
+    df_session[df_session$t ==i,"n_capt_juveniles"] <- sum(capt_indiv == 1) 
+    
+  }
+  
+  # calculate productivity
+  df_session <- df_session%>%
+    mutate(prod = n_capt_juveniles/(n_capt_adults+n_capt_juveniles))
+  
+  df_site <- rbind(df_site, df_session)
+  
+  
+  # df with mean ld per year ("real breeding date")
+  df_mean_ld <- data.frame(mean_ld = mean_ld)
+  
+  
+  return(list(capt_sess = df_site, 
+              mean_ld_year = df_mean_ld,
+              R_et = mean(n_eggs),
+              # mu_star = mean(fitness*ld_dates),
+              mu_star = mean_ld-(shiftopt/((fact_omega^1)+1)),
+              # var_star = var(fitness*ld_dates)))
+              var_star = ((fact_omega^2)/((fact_omega^2)+1))*(sd_ld^2)))
+  
+}
+
+
+# -------------------------------------------------------------------------
+
+
+
+
 data_md <- data.frame()
 
-n_sites = 150
-rp <- 10 # number of repetition per simulation 
+n_sites = 100
+rp <- 1 # number of repetition per simulation 
 
 for(n_sess in c(10,5)){ # UK, FRP
-  # for(n_sess in c(10)){ # UK, FRP
+
   for(sd_ld_ in c(4,8)){ # within site variance in ld
-    # for(sd_ld_ in c(4)){ # within site variance in ld
     
     for(sd_betw in seq(0,10, length.out = 30)){ # for a gradient of between site variance
       
@@ -29,10 +152,11 @@ for(n_sess in c(10,5)){ # UK, FRP
         
         for(n_site in 1:n_sites){ # 
           
+          
           mean_ld_site <- rnorm(1, mean = 90, sd = sd_betw)
           
           # extracted from code 10
-          data_s <- simul_data(n_breeders = 8, # number of breeding pair per site
+          data_s <- simul_data_no_sel(n_breeders = 8, # number of breeding pair per site
                                n_session = n_sess, 
                                start_ces = 50,
                                end_ces = 200,
@@ -116,49 +240,18 @@ for(n_sess in c(10,5)){ # UK, FRP
         print(paste("sd_betw =", sd_betw))
         print(paste("z =", z))
         
-        # full but n_rep = 5
-        # saveRDS(data_md, "data_power_analysis2.rds")
-        
-        # n_rep = 10
-        # saveRDS(data_md, "data_power_analysis3.rds")
-        
-        # saveRDS(data_md, "data_power_analysis4.rds")
-        
-        
-        # re run n_seesion = 10, sd_ld = 4, betw_sd = 0:1.7
-        saveRDS(data_md, "data_power_analysis5.rds")
+        saveRDS(data_md, "data_power_analysis_NO_SEL.rds")
         
       }
     }
   }
 }
 
-# saveRDS(data_md, "data_power_analysis2.rds")
+
 
 
 # -------------------------------------------------------------------------
-# data_md <- readRDS("data_power_analysis2.rds")
-
-# more replicates and no selection
-
-# goes until 5,8,3.79 (r crashed after)
-data_md3 <- readRDS("data_power_analysis3.rds")
-
-# goes from 5,8,3.79 (r crashed after)
-data_md4 <- readRDS("data_power_analysis4.rds")
-
-# Remove n_seesion = 10, sd_ld = 4, betw_sd = 0:1.7
-data_repl <- readRDS("data_power_analysis5.rds") %>% 
-  mutate(it = paste(n_sess, sl_ld, sd_betw))
-
-
-data_md <- rbind(data_md3, data_md4) %>%
-  mutate(it = paste(n_sess, sl_ld, sd_betw)) %>% 
-  filter(!it %in% data_repl$it)%>%
-  # add corresponding (data_power_analysis5.rds)
-  rbind(data_repl)
-  
-
+data_md <- readRDS("data_power_analysis_NO_SEL.rds")
 
 # plot grand mean
 pheno_plot <- data_md %>% 
@@ -187,12 +280,12 @@ pheno_plot <- data_md %>%
        y = "Estimated phenology",
        color = "Within site sd",
        fill = "Within site sd")+
-  theme(strip.placement = "",
-        strip.text.x = element_blank(),
+  theme(strip.placement = "outside",
+        # strip.text = "",
         strip.background = element_blank(),
         panel.background = element_blank(),
         legend.position = "None"
-        )+
+  )+
   scale_color_viridis_d(end = 0.8)+
   scale_fill_viridis_d(end = 0.8)
 
@@ -212,7 +305,7 @@ var_plot <- data_md %>%
   geom_ribbon(aes(ymin =  min_med_rd_site, 
                   ymax = max_med_rd_site,
                   fill = as.factor(sl_ld)), alpha = 0.3) + 
-  geom_line(aes(, y = mean_med_rd_site), size = 0.8)+
+  geom_line(aes(y = mean_med_rd_site), size = 0.8)+
   geom_function(fun = function(w){w},
                 col = "grey67", size = 0.6, linetype = "dashed")+
   # coord_fixed() +
@@ -221,25 +314,21 @@ var_plot <- data_md %>%
              space = "fixed")+
   
   theme_bw()+
-  labs(x = "",
+  labs(x = " ",
        y = "Estimated between site sd",
        color = "Within site sd",
        fill = "Within site sd")+
   theme(strip.placement = "outside",
-        # strip.text = "",
         strip.text.x = element_blank(),
         strip.background = element_blank(),
         panel.background = element_blank(),
-        legend.position = "None"
-  )+
+        legend.position = "",
+        legend.direction = "horizontal")+
   scale_color_viridis_d(end = 0.8)+
   scale_fill_viridis_d(end = 0.8)
 
 var_plot
 
-
-
-# intra site variance estimation 
 
 intra_var_plot <- data_md %>% 
   group_by(n_sess, sl_ld, sd_betw) %>%
@@ -291,88 +380,3 @@ intra_var_plot
 
 gridExtra::grid.arrange(pheno_plot, var_plot, intra_var_plot,
                         nrow = 3)
-
-
-# Add tm and b estimations  -----------------------------------------------
-
-# plot tm 
-
-tm_plot <- data_md %>% 
-  group_by(n_sess, sl_ld, sd_betw) %>%
-  summarise(mean_est_tm = mean(mean_tm),
-            min_tm = mean(mean_tm)- sd(mean_tm),
-            max_tm = mean(mean_tm)+sd(mean_tm)) %>% 
-  # mutate(rp2 = paste(n_sess, sl_ld, rp)) %>% 
-  ggplot(aes(x = sd_betw, #group = rp2,
-             color = as.factor(sl_ld)))+
-  geom_ribbon(aes(ymin =  min_tm, 
-                  ymax = max_tm,
-                  fill = as.factor(sl_ld)), alpha = 0.3) + 
-  geom_line(aes(y = mean_est_tm), size = 0.8)+
-  # geom_function(fun = function(w){w},
-  #               col = "grey67", size = 0.6, linetype = "dashed")+
-  # coord_fixed() +
-  facet_grid(.~n_sess,
-             labeller = label_bquote(cols = "N sessions"==.(n_sess)),
-             space = "fixed")+
-  
-  theme_bw()+
-  labs(x = "",
-       y = "tm",
-       color = "Within site sd",
-       fill = "Within site sd")+
-  theme(strip.placement = "outside",
-        # strip.text = "",
-        # strip.text.x = element_blank(),
-        strip.background = element_blank(),
-        panel.background = element_blank(),
-        legend.position = "None"
-  )+
-  scale_color_viridis_d(end = 0.8)+
-  scale_fill_viridis_d(end = 0.8)
-
-tm_plot
-
-# plot b 
-
-b_plot <- data_md %>% 
-  group_by(n_sess, sl_ld, sd_betw) %>%
-  summarise(mean_est_b = mean(mean_b),
-            min_b = mean(mean_b)- sd(mean_b),
-            max_b = mean(mean_b)+sd(mean_b)) %>% 
-  # mutate(rp2 = paste(n_sess, sl_ld, rp)) %>% 
-  ggplot(aes(x = sd_betw, #group = rp2,
-             color = as.factor(sl_ld)))+
-  geom_ribbon(aes(ymin =  min_b, 
-                  ymax = max_b,
-                  fill = as.factor(sl_ld)), alpha = 0.3) + 
-  geom_line(aes(y = mean_est_b), size = 0.8)+
-  # geom_function(fun = function(w){w},
-  #               col = "grey67", size = 0.6, linetype = "dashed")+
-  # coord_fixed() +
-  facet_grid(.~n_sess,
-             labeller = label_bquote(cols = "N sessions"==.(n_sess)),
-             space = "fixed")+
-  
-  theme_bw()+
-  labs(x = "",
-       y = "b",
-       color = "Within site sd",
-       fill = "Within site sd")+
-  theme(strip.placement = "outside",
-        # strip.text = "",
-        strip.text.x = element_blank(),
-        strip.background = element_blank(),
-        panel.background = element_blank(),
-        legend.position = "None"
-  )+
-  scale_color_viridis_d(end = 0.8)+
-  scale_fill_viridis_d(end = 0.8)
-
-b_plot
-
-
-gridExtra::grid.arrange(tm_plot, 
-                        b_plot, 
-                        pheno_plot, var_plot, intra_var_plot,
-                        nrow = 5)

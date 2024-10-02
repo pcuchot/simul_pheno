@@ -73,6 +73,7 @@ simul_data <- function(n_breeders = 1000, # number of pair
                       length.out = n_session))
   
   mean_n_capt <- 200
+  # mean_n_capt <- 10
   
   # Dataframe with n_adults and n_juveniles captured per session
   df_session <- data.frame(t = t_capt,
@@ -437,45 +438,41 @@ df_simul3 %>%
   # xlim(15 ,100)+
   labs(x = bquote({sigma^2} [laydate~simulated]),
        y = bquote(widehat(R) [estimated]),
-       color = bquote(widehat(R)),
-       size = bquote(widehat(R)),
-       linetype = bquote(widehat(R)))+
+       color = "Reproductive rate",
+       size = "Reproductive rate",
+       linetype = "Reproductive rate")+
   theme_bw()+
   scale_color_manual(
-    labels = c(bquote(R^"*"),
-               bquote(widehat(W[max])),
-               bquote(widehat(R[p[infinity]]))),
+    labels = c("True, after selection" ,
+               "Estimated, (after selection)",
+               "Corrected from selection"),
     breaks = c("R_star","R_hat","R_hat_sel"),
     values=c("orange2", "darkslateblue", 
              "olivedrab3"))+
   
   scale_linetype_manual(
-    labels = c(bquote(R^"*"),
-               bquote(widehat(W[max])),
-               bquote(widehat(R[p[infinity]]))),
-    breaks  = c("R_star","R_hat","R_hat_sel"),
+    labels = c("True, after selection" ,
+               "Estimated, (after selection)",
+               "Corrected from selection"),
+    breaks = c("R_star","R_hat","R_hat_sel"),
     values = c("dashed","solid","solid"))+
   
   scale_size_manual(
-    labels = c(bquote(R^"*"),
-               bquote(widehat(W[max])),
-               bquote(widehat(R[p[infinity]]))),
+    labels = c("True, after selection" ,
+               "Estimated, (after selection)",
+               "Corrected from selection"),
     breaks  = c("R_star","R_hat","R_hat_sel"),
     values = c(0.6,0.9,0.9))+
-  # coord_flip()+
-  # facet_grid(n_eggs~ omega_tilde, 
-  #            labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
-  #                                    rows = widehat(W[max])==.(n_eggs)), 
-  #            scales = "free", space = "fixed")+
   ggh4x::facet_grid2(n_eggs~ omega_tilde, 
              labeller = label_bquote(cols = tilde(omega)==.(omega_tilde),
                                      rows = widehat(W[max])==.(n_eggs)), 
              scales = "free_y", independent = "none")+
-  
-  # coord_flip()+
+
   theme(strip.placement = "outside",
         strip.background = element_blank(),
-        panel.background = element_blank())
+        panel.background = element_blank(),
+        legend.position = "bottom",
+        legend.direction = "horizontal")
   
 
 
